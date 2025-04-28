@@ -1,0 +1,913 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Invaders Quiz</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --game-bg: #000000;
+            --player-color: #00ff00; /* Bright green */
+            --alien-color: #ff0000; /* Bright red */
+            --projectile-color: #ffffff; /* White */
+            --text-color: #ffffff;
+            --modal-bg: rgba(20, 20, 20, 0.9);
+            --button-bg: #333333;
+            --button-hover-bg: #555555;
+            --button-border: #aaaaaa;
+            --correct-color: #33ff33;
+            --incorrect-color: #ff3333;
+            --life-color: #ffff00; /* Yellow for lives */
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #1a1a1a; /* Dark background */
+            color: var(--text-color);
+            font-family: 'Press Start 2P', cursive;
+            margin: 0;
+            padding-top: 20px; /* Add some padding at the top */
+            overflow: hidden; /* Prevent scrollbars */
+        }
+
+        h1 {
+            color: var(--player-color);
+            margin-bottom: 15px; /* Space below title */
+            font-size: 1.8em;
+            text-shadow: 2px 2px #ff00ff; /* Magenta shadow for retro feel */
+        }
+
+        /* Container for Score and Lives - Positioned above game */
+        #game-info {
+            display: flex;
+            justify-content: space-between; /* Space out score and lives */
+            width: 90%; /* Match canvas width or adjust */
+            max-width: 600px; /* Match canvas width */
+            margin-bottom: 15px; /* Space below info, above canvas */
+            font-size: 1.2em;
+        }
+
+        #score-board {
+             text-align: left;
+        }
+        #lives-board {
+            text-align: right;
+            color: var(--life-color); /* Use life color */
+        }
+
+        #game-container {
+            position: relative; /* For positioning messages */
+            border: 4px solid var(--button-border);
+            box-shadow: 0 0 15px var(--player-color); /* Neon glow */
+        }
+
+        canvas {
+            display: block; /* Remove extra space below canvas */
+            background-color: var(--game-bg);
+        }
+
+
+        /* --- Question Modal --- */
+        #question-modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 100;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); /* Dark overlay */
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .modal-content {
+            background-color: var(--modal-bg);
+            padding: 30px 40px;
+            border: 4px solid var(--button-border);
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            box-shadow: 0 0 10px var(--text-color);
+        }
+
+        #question-text {
+            margin-bottom: 25px;
+            font-size: 1em; /* Adjust as needed */
+            line-height: 1.5;
+        }
+
+        .answer-options button {
+            display: block;
+            width: 100%;
+            padding: 15px 10px;
+            margin: 10px 0;
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 2px solid var(--button-border);
+            font-family: 'Press Start 2P', cursive;
+            font-size: 0.9em;
+            cursor: pointer;
+            text-align: left;
+            transition: background-color 0.2s;
+        }
+
+        .answer-options button:hover:not(:disabled) {
+            background-color: var(--button-hover-bg);
+        }
+
+        .answer-options button:disabled {
+            opacity: 0.6;
+            cursor: default;
+        }
+
+        .answer-options button.selected-correct {
+            background-color: var(--correct-color) !important;
+            color: #000;
+            border-color: var(--correct-color);
+        }
+
+        .answer-options button.selected-incorrect {
+            background-color: var(--incorrect-color) !important;
+            color: #000;
+            border-color: var(--incorrect-color);
+        }
+
+        #feedback-text {
+            margin-top: 20px;
+            font-size: 1em;
+            min-height: 1.5em; /* Prevent layout shift */
+            font-weight: normal; /* Override potential bolding */
+        }
+        #feedback-text.correct { color: var(--correct-color); }
+        #feedback-text.incorrect { color: var(--incorrect-color); }
+
+
+        /* --- Message Box (Game Over / Start / Life Lost) --- */
+        #message-box {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.85);
+            color: var(--text-color);
+            padding: 25px 35px;
+            border: 4px solid var(--button-border);
+            font-size: 1.2em;
+            text-align: center;
+            z-index: 50;
+            display: flex; /* Use flex for layout */
+            flex-direction: column;
+            align-items: center;
+            gap: 15px; /* Space between elements */
+            box-shadow: 0 0 10px var(--text-color);
+        }
+        #message-box p {
+            margin: 0;
+            line-height: 1.4;
+        }
+        #message-box button {
+             padding: 10px 20px;
+             background-color: var(--button-bg);
+             color: var(--text-color);
+             border: 2px solid var(--button-border);
+             font-family: 'Press Start 2P', cursive;
+             font-size: 0.9em;
+             cursor: pointer;
+             transition: background-color 0.2s;
+        }
+         #message-box button:hover {
+             background-color: var(--button-hover-bg);
+         }
+
+         /* Simple button styling for potential future controls */
+         .controls {
+             margin-top: 20px;
+         }
+         .control-button {
+             padding: 10px 15px;
+             background-color: var(--button-bg);
+             color: var(--text-color);
+             border: 2px solid var(--button-border);
+             font-family: 'Press Start 2P', cursive;
+             font-size: 0.9em;
+             cursor: pointer;
+             margin: 0 5px;
+             transition: background-color 0.2s;
+         }
+         .control-button:hover {
+             background-color: var(--button-hover-bg);
+         }
+
+         /* Player blinking effect */
+         .player-invincible {
+             animation: blink 0.2s infinite;
+         }
+
+         @keyframes blink {
+             0%, 100% { opacity: 1; }
+             50% { opacity: 0.3; }
+         }
+
+    </style>
+</head>
+<body>
+    <h1>CFTE Space Invaders Quiz</h1>
+
+    <div id="game-info">
+        <div id="score-board">Score: 0</div>
+        <div id="lives-board">Lives: 3</div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="message-box" style="display: none;"></div>
+    </div>
+
+    <div id="question-modal">
+        <div class="modal-content">
+            <div id="question-text">Question placeholder</div>
+            <div class="answer-options" id="answer-options"></div>
+            <div id="feedback-text"></div>
+        </div>
+    </div>
+
+    <div class="controls" id="touch-controls" style="display: none; margin-top: 15px;">
+         <button id="touch-left" class="control-button">&lt;</button>
+         <button id="touch-fire" class="control-button">FIRE</button>
+         <button id="touch-right" class="control-button">&gt;</button>
+     </div>
+
+
+    <script>
+        // --- DOM Elements ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreBoard = document.getElementById('score-board');
+        const livesBoard = document.getElementById('lives-board'); // Get lives display element
+        const questionModal = document.getElementById('question-modal');
+        const questionText = document.getElementById('question-text');
+        const answerOptionsContainer = document.getElementById('answer-options');
+        const feedbackText = document.getElementById('feedback-text');
+        const messageBox = document.getElementById('message-box');
+        const gameContainer = document.getElementById('game-container');
+        const touchControls = document.getElementById('touch-controls');
+
+
+        // --- Game Configuration ---
+        const canvasWidth = 600;
+        const canvasHeight = 400;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        const playerWidth = 40;
+        const playerHeight = 20;
+        const playerSpeed = 5;
+        const projectileWidth = 4;
+        const projectileHeight = 10;
+        const projectileSpeed = 7;
+        const alienWidth = 30;
+        const alienHeight = 20;
+        const alienSpeed = 0.5; // Initial speed
+        const alienSpawnInterval = 1500; // Milliseconds between spawns (initial)
+        const alienPadding = 10;
+        const alienRows = 1;
+        const alienCols = 1;
+        const initialLives = 3; // Starting number of lives
+        const invincibilityDuration = 2000; // Milliseconds of invincibility after losing a life
+        const KILLS_PER_QUESTION = 5; // <-- How many kills trigger a question
+
+        // --- Game State ---
+        let playerX;
+        let score = 0;
+        let playerLives = initialLives; // Initialize player lives
+        let projectiles = [];
+        let aliens = [];
+        let keys = {}; // To track pressed keys
+        let isGameOver = false;
+        let isPaused = false; // Used for question modal or life loss pause
+        let gameLoopId;
+        let alienSpawnTimerId;
+        let currentAlienSpeed = alienSpeed;
+        let currentSpawnInterval = alienSpawnInterval;
+        let lastSpawnTime = 0;
+        let currentQuestion = null;
+        let askedQuestionIndices = new Set();
+        let killsSinceLastQuestion = 0; // <-- ADDED: Counter for kills
+        let isPlayerInvincible = false; // Flag for invincibility
+        let invincibilityTimerId = null; // Timer for invincibility
+
+
+        // --- Player Object (simple representation) ---
+        const player = {
+            x: canvasWidth / 2 - playerWidth / 2,
+            y: canvasHeight - playerHeight - 10, // Positioned at the bottom
+            width: playerWidth,
+            height: playerHeight,
+            speed: playerSpeed,
+            color: getCssVariable('--player-color') || '#00ff00', // Use CSS variable
+            dx: 0 // Horizontal movement direction
+        };
+
+        // --- Questions (Generated from the provided AI script) ---
+         const questions = [
+             // Definitions
+             { question: "What is the broad field where machines aim to mimic human capabilities?", options: ["Artificial Intelligence", "Machine Learning", "Deep Learning", "Generative AI"], correctAnswer: "Artificial Intelligence", difficulty: 1 },
+             { question: "What subset of AI involves machines learning and improving by themselves from data?", options: ["Machine Learning", "Deep Learning", "Transformers", "Artificial Intelligence"], correctAnswer: "Machine Learning", difficulty: 1 },
+             { question: "Which field uses Neural Networks inspired by the human brain?", options: ["Deep Learning", "Machine Learning", "Generative AI", "Large Language Models"], correctAnswer: "Deep Learning", difficulty: 2 },
+             { question: "What type of AI focuses specifically on creating new content like text, images, or audio?", options: ["Generative AI", "Machine Learning", "Deep Learning", "Transformers"], correctAnswer: "Generative AI", difficulty: 2 },
+             { question: "What is a 'Transformer' in the context of modern AI?", options: ["A neural network architecture", "A type of robot", "A data cleaning tool", "A programming language"], correctAnswer: "A neural network architecture", difficulty: 2 },
+             { question: "What are advanced deep learning models trained on vast amounts of data to understand/generate text called?", options: ["Large Language Models (LLMs)", "Generative AI", "Transformers", "Neural Networks"], correctAnswer: "Large Language Models (LLMs)", difficulty: 2 },
+             { question: "What does 'GPT' in ChatGPT stand for?", options: ["Generative Pre-Trained Transformer", "General Purpose Technology", "Global Processing Terminal", "Graphical Processing Tool"], correctAnswer: "Generative Pre-Trained Transformer", difficulty: 1 },
+             { question: "In GPT, what does the 'G' signify?", options: ["Generative (creates content)", "General (broad purpose)", "Google (the company)", "GPU (hardware)"], correctAnswer: "Generative (creates content)", difficulty: 1 },
+             { question: "In GPT, what does 'Pre-Trained' mean?", options: ["Trained on vast data beforehand", "Requires training before each use", "Only partially trained", "Trained specifically for one task"], correctAnswer: "Trained on vast data beforehand", difficulty: 1 },
+             { question: "Which architecture does ChatGPT use, indicated by the 'T' in GPT?", options: ["Transformer", "Recurrent Neural Network", "Convolutional Neural Network", "Support Vector Machine"], correctAnswer: "Transformer", difficulty: 1 },
+
+             // History & Milestones
+             { question: "In which year was the term 'Artificial Intelligence' coined?", options: ["1956", "1997", "2012", "2022"], correctAnswer: "1956", difficulty: 1 },
+             { question: "What famous event happened in 1997 involving AI and chess?", options: ["Deep Blue beat Garry Kasparov", "Google Cat Experiment", "ChatGPT was released", "AI became 'AI-first'"], correctAnswer: "Deep Blue beat Garry Kasparov", difficulty: 2 },
+             { question: "Around what year did the 'Google Cat Experiment' demonstrate a Deep Learning breakthrough?", options: ["2012", "1997", "2017", "2022"], correctAnswer: "2012", difficulty: 2 },
+             { question: "Around 2017, what shift did many tech companies like Google announce?", options: ["Becoming 'AI-first' companies", "Focusing only on Machine Learning", "Abandoning Deep Learning", "Releasing ChatGPT"], correctAnswer: "Becoming 'AI-first' companies", difficulty: 3 },
+             { question: "In which year was ChatGPT released, bringing Generative AI to the public?", options: ["2022", "2012", "2017", "1997"], correctAnswer: "2022", difficulty: 2 },
+
+             // Technology & Concepts
+             { question: "What type of hardware, initially for gaming, proved crucial for training Deep Learning models?", options: ["GPUs (Graphics Processing Units)", "CPUs (Central Processing Units)", "RAM (Random Access Memory)", "SSDs (Solid State Drives)"], correctAnswer: "GPUs (Graphics Processing Units)", difficulty: 2 },
+             { question: "What was revolutionary about the 'Google Cat Experiment'?", options: ["The system learned to identify cats without human instruction", "It used very little data", "It ran on a standard home computer", "It could talk about cats"], correctAnswer: "The system learned to identify cats without human instruction", difficulty: 3 },
+             { question: "What is a key difference between traditional Machine Learning and Generative AI?", options: ["ML analyzes existing data, GenAI creates new content", "ML uses Transformers, GenAI uses older methods", "ML is newer than GenAI", "GenAI cannot learn from data"], correctAnswer: "ML analyzes existing data, GenAI creates new content", difficulty: 2 },
+             { question: "Which task is typical for traditional Machine Learning?", options: ["Filtering spam emails", "Drawing a picture of a dog", "Writing a poem", "Generating dynamic chat responses"], correctAnswer: "Filtering spam emails", difficulty: 2 },
+             { question: "Which task is typical for Generative AI?", options: ["Generating a contextually relevant chatbot response", "Identifying a cat in a photo", "Predicting stock prices based on past data", "Detecting credit card fraud"], correctAnswer: "Generating a contextually relevant chatbot response", difficulty: 2 }
+         ];
+
+
+        // --- Utility Functions ---
+        function getCssVariable(varName) {
+            return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // --- Drawing Functions ---
+        function drawPlayer() {
+            // Apply blinking effect if invincible
+            if (isPlayerInvincible) {
+                if (Math.floor(performance.now() / 100) % 2 === 0) {
+                     return; // Skip drawing half the time for blink effect
+                }
+            }
+            ctx.fillStyle = player.color;
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+             // Draw a simple turret on top
+             ctx.fillStyle = '#cccccc'; // Light gray for turret
+             ctx.fillRect(player.x + player.width / 2 - 3, player.y - 5, 6, 5); // Small rectangle
+        }
+
+        function drawProjectiles() {
+            ctx.fillStyle = getCssVariable('--projectile-color') || '#ffffff';
+            projectiles.forEach(p => {
+                ctx.fillRect(p.x, p.y, p.width, p.height);
+            });
+        }
+
+        function drawAliens() {
+            const alienColor = getCssVariable('--alien-color') || '#ff0000';
+            aliens.forEach(alien => {
+                // Simple blocky alien representation
+                // ctx.fillStyle = alienColor;
+                // ctx.fillRect(alien.x, alien.y, alien.width, alien.height);
+
+                // Emoji alien representation
+                ctx.font = `${alien.height * 1.5}px Arial`; // Adjust size as needed
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText('👾', alien.x + alien.width / 2, alien.y + alien.height / 2); // Use emoji
+            });
+        }
+
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        }
+
+        // --- Game Logic ---
+        function updatePlayer() {
+             if (isPaused) return; // Don't move if paused
+            player.x += player.dx;
+            // Boundary checks
+            if (player.x < 0) {
+                player.x = 0;
+            } else if (player.x + player.width > canvasWidth) {
+                player.x = canvasWidth - player.width;
+            }
+        }
+
+        function updateProjectiles() {
+             if (isPaused) return; // Don't move if paused
+            projectiles.forEach((p, index) => {
+                p.y -= p.speed;
+                // Remove projectile if it goes off-screen
+                if (p.y + p.height < 0) {
+                    projectiles.splice(index, 1);
+                }
+            });
+        }
+
+        function spawnAlien() {
+             if (isPaused || isGameOver) return; // Don't spawn if paused or game over
+            const x = Math.random() * (canvasWidth - alienWidth);
+            const y = 0 - alienHeight; // Start just above the canvas
+            aliens.push({
+                x: x, y: y, width: alienWidth, height: alienHeight, speed: currentAlienSpeed
+            });
+             // Optionally increase speed slightly over time
+             currentAlienSpeed += 0.01; // Make this increase smaller or conditional
+             // console.log("Spawned alien, current speed:", currentAlienSpeed);
+        }
+
+        function updateAliens() {
+             if (isPaused) return; // Don't move if paused
+            let triggerLifeLoss = false;
+            let lifeLossReason = "";
+
+            aliens.forEach((alien, index) => {
+                alien.y += alien.speed;
+
+                // Check if alien reached the bottom
+                if (alien.y + alien.height > canvasHeight) {
+                    triggerLifeLoss = true;
+                    lifeLossReason = "Alien reached the bottom!";
+                    aliens.splice(index, 1); // Remove the alien that reached the bottom
+                    return; // Stop processing this alien
+                }
+
+                 // Check for collision with player (only if player is NOT invincible)
+                 if (!isPlayerInvincible &&
+                     alien.x < player.x + player.width &&
+                     alien.x + alien.width > player.x &&
+                     alien.y < player.y + player.height &&
+                     alien.y + alien.height > player.y
+                 ) {
+                     triggerLifeLoss = true;
+                     lifeLossReason = "Alien collided with player!";
+                     // Don't remove the alien here, handleLifeLoss will clear them
+                     return; // Stop checking other aliens once a collision is detected
+                 }
+            });
+
+            if (triggerLifeLoss) {
+                handleLifeLoss(lifeLossReason);
+            }
+        }
+
+        function checkCollisions() {
+             if (isPaused || isPlayerInvincible) return; // Skip checks if paused or invincible
+
+             projectiles.forEach((p, pIndex) => {
+                 // Iterate backwards through aliens for safe removal
+                 for (let aIndex = aliens.length - 1; aIndex >= 0; aIndex--) {
+                     const alien = aliens[aIndex];
+
+                     // Ensure projectile still exists (might have hit another alien already in this frame)
+                     if (!projectiles[pIndex]) break; // Exit inner loop if projectile is gone
+
+                     if (
+                         p.x < alien.x + alien.width &&
+                         p.x + p.width > alien.x &&
+                         p.y < alien.y + alien.height &&
+                         p.y + p.height > alien.y
+                     ) {
+                         // Collision detected!
+                         projectiles.splice(pIndex, 1); // Remove the projectile
+                         aliens.splice(aIndex, 1);     // Remove the alien
+
+                         score += 10;                 // Increase score
+                         scoreBoard.textContent = `Score: ${score}`; // Update scoreboard
+
+                         killsSinceLastQuestion++; // <-- INCREMENT KILL COUNTER
+
+                         // --- Check if it's time for a question ---
+                         if (killsSinceLastQuestion >= KILLS_PER_QUESTION) { // <-- CHECK COUNTER
+                             killsSinceLastQuestion = 0;    // <-- RESET COUNTER
+                             pauseGame(true, false);      // Pause the game logic
+                             askQuestion();               // Ask the question
+                         }
+                         // --- End Question Check ---
+
+                         // Since projectile is gone, stop checking it against other aliens
+                         break; // Exit the inner alien loop
+                     }
+                 }
+             });
+
+             // Player-alien collision is handled in updateAliens to allow invincibility check
+        }
+
+
+        // --- Question Handling ---
+        function askQuestion() {
+             isPaused = true; // Ensure game logic stops
+             if (gameLoopId) cancelAnimationFrame(gameLoopId); // Stop rendering loop if running
+             gameLoopId = null;
+
+            // Determine question difficulty based on score
+            let maxDifficulty = 1;
+            if (score >= 150) maxDifficulty = 3; // Harder questions at higher scores
+            else if (score >= 50) maxDifficulty = 2; // Medium questions
+
+            // Filter questions by difficulty and exclude already asked ones
+            let potentialQuestions = questions
+                .map((q, index) => ({ ...q, originalIndex: index })) // Keep track of original index
+                .filter(q => q.difficulty <= maxDifficulty);
+            let availableQuestions = potentialQuestions.filter(q => !askedQuestionIndices.has(q.originalIndex));
+
+            // If we run out of questions at the current difficulty, reset *only* those asked at or below this level
+            if (availableQuestions.length === 0 && potentialQuestions.length > 0) {
+                console.log("Resetting asked questions for difficulty <=", maxDifficulty);
+                potentialQuestions.forEach(q => askedQuestionIndices.delete(q.originalIndex));
+                availableQuestions = potentialQuestions.filter(q => !askedQuestionIndices.has(q.originalIndex));
+            }
+            // If still no questions (e.g., all questions exhausted), just resume the game
+             if (availableQuestions.length === 0) {
+                 console.warn("No suitable questions left, even after reset! Resuming game.");
+                 resumeGameAfterQuestion(); // Resume if no question found
+                 return;
+             }
+
+            const randomIndex = Math.floor(Math.random() * availableQuestions.length);
+            currentQuestion = availableQuestions[randomIndex];
+            askedQuestionIndices.add(currentQuestion.originalIndex); // Track original index as asked
+
+            questionText.textContent = currentQuestion.question;
+            answerOptionsContainer.innerHTML = ''; // Clear previous options
+            feedbackText.textContent = ''; // Clear previous feedback
+            feedbackText.className = ''; // Reset feedback style
+
+            // Shuffle options for variety
+            const shuffledOptions = [...currentQuestion.options];
+            shuffleArray(shuffledOptions);
+
+            shuffledOptions.forEach(option => {
+                const button = document.createElement('button');
+                button.textContent = option;
+                button.onclick = (e) => handleAnswer(option, e.target); // Pass the button element
+                answerOptionsContainer.appendChild(button);
+            });
+
+            questionModal.style.display = 'flex'; // Show the modal
+        }
+
+        function handleAnswer(selectedOption, selectedButton) {
+            const correct = selectedOption === currentQuestion.correctAnswer;
+            const buttons = answerOptionsContainer.querySelectorAll('button');
+
+            // Disable all buttons after an answer is chosen
+            buttons.forEach(btn => btn.disabled = true);
+
+            if (correct) {
+                let pointsAwarded = currentQuestion.difficulty * 10; // More points for harder Qs
+                score += pointsAwarded;
+                scoreBoard.textContent = `Score: ${score}`;
+                feedbackText.textContent = `Correct! +${pointsAwarded} pts!`;
+                feedbackText.classList.add('correct');
+                selectedButton.classList.add('selected-correct'); // Highlight selected correct answer
+            } else {
+                feedbackText.textContent = `Incorrect! Answer: ${currentQuestion.correctAnswer}`;
+                feedbackText.classList.add('incorrect');
+                selectedButton.classList.add('selected-incorrect'); // Highlight selected incorrect answer
+                // Also highlight the actual correct answer
+                 buttons.forEach(btn => {
+                     if(btn.textContent === currentQuestion.correctAnswer) {
+                         btn.classList.add('selected-correct'); // Show the right one
+                     }
+                 });
+                 // Optional penalty or effect for wrong answer could go here
+                 // e.g., slightly increase alien speed for the next wave?
+                 // currentAlienSpeed += 0.1;
+            }
+
+            // Wait a moment before closing the modal and resuming
+            setTimeout(resumeGameAfterQuestion, 1800); // 1.8 seconds delay
+        }
+
+        function resumeGameAfterQuestion() {
+            questionModal.style.display = 'none'; // Hide the modal
+            if (!isGameOver) { // Only resume if game isn't over
+                isPaused = false; // Allow game logic to run again
+                if (!gameLoopId) { // Restart the game loop if it was stopped
+                     lastSpawnTime = performance.now(); // Reset spawn timer
+                    gameLoopId = requestAnimationFrame(gameLoop);
+                }
+            }
+        }
+
+        // --- Game State Management ---
+        function pauseGame(forQuestion = false, stopSpawning = true) {
+             isPaused = true;
+             if (gameLoopId) { // Stop the main loop
+                 cancelAnimationFrame(gameLoopId);
+                 gameLoopId = null;
+             }
+             // Note: Alien spawning is now controlled within the gameLoop based on isPaused
+             // so explicitly stopping spawn timer might not be needed unless using setInterval
+        }
+
+        function showMessageBox(message, showButton = true, buttonText = "Restart", onButtonClick = restartGame) {
+            messageBox.innerHTML = `<p>${message.replace(/\n/g, '<br>')}</p>`; // Allow newlines in message
+            if (showButton) {
+                const button = document.createElement('button');
+                button.textContent = buttonText;
+                button.onclick = onButtonClick;
+                messageBox.appendChild(button);
+            }
+            messageBox.style.display = 'flex'; // Show the box
+        }
+
+        function hideMessageBox() {
+            messageBox.style.display = 'none'; // Hide the box
+        }
+
+        function handleLifeLoss(reason) {
+             if (isGameOver || isPlayerInvincible) return; // Ignore if already game over or invincible
+
+            playerLives--;
+            livesBoard.textContent = `Lives: ${playerLives}`;
+            console.log("Life Lost:", reason, "Lives left:", playerLives);
+            pauseGame(false, true); // Pause the game
+
+             if (playerLives <= 0) {
+                 gameOver(reason); // Trigger game over
+             } else {
+                 // Start invincibility period
+                 isPlayerInvincible = true;
+                 // Clear screen of dangers
+                 aliens = [];
+                 projectiles = [];
+                 // Reset player position
+                 player.x = canvasWidth / 2 - playerWidth / 2;
+                 player.dx = 0;
+
+                 // Show life lost message and wait for player to continue
+                 showMessageBox(`Life Lost!\n${reason}\nLives Left: ${playerLives}`, true, "Continue", () => {
+                     hideMessageBox();
+                     isPaused = false; // Unpause game logic
+
+                     // Clear previous invincibility timer if any (shouldn't happen often)
+                     if (invincibilityTimerId) clearTimeout(invincibilityTimerId);
+
+                     // Set timer to end invincibility
+                     invincibilityTimerId = setTimeout(() => {
+                         isPlayerInvincible = false;
+                         invincibilityTimerId = null;
+                         console.log("Player invincibility ended");
+                     }, invincibilityDuration);
+
+                     // Restart game loop
+                     if (!gameLoopId) {
+                          lastSpawnTime = performance.now(); // Reset spawn timer
+                         gameLoopId = requestAnimationFrame(gameLoop);
+                     }
+                 });
+             }
+        }
+
+        function gameOver(reason) {
+             if (isGameOver) return; // Prevent multiple game over triggers
+            console.log("Game Over:", reason);
+            isGameOver = true;
+            isPaused = true; // Ensure game stays paused
+            if (gameLoopId) { // Stop the loop definitively
+                cancelAnimationFrame(gameLoopId);
+                gameLoopId = null;
+            }
+             // Cancel invincibility if game ends while invincible
+             if (invincibilityTimerId) {
+                 clearTimeout(invincibilityTimerId);
+                 isPlayerInvincible = false; // Ensure player isn't drawn invincible on game over screen
+                 invincibilityTimerId = null;
+             }
+            showMessageBox(`Game Over! ${reason}\nFinal Score: ${score}`, true, "Restart", restartGame);
+        }
+
+        function restartGame() {
+            hideMessageBox();
+            score = 0;
+            playerLives = initialLives;
+            player.x = canvasWidth / 2 - playerWidth / 2;
+            player.dx = 0;
+            projectiles = [];
+            aliens = [];
+            keys = {};
+            isGameOver = false;
+            isPaused = false;
+            isPlayerInvincible = false;
+            currentAlienSpeed = alienSpeed; // Reset alien speed
+            currentSpawnInterval = alienSpawnInterval; // Reset spawn interval
+            askedQuestionIndices.clear(); // Clear asked questions
+            killsSinceLastQuestion = 0; // <-- RESET KILL COUNTER
+
+            scoreBoard.textContent = `Score: ${score}`;
+            livesBoard.textContent = `Lives: ${playerLives}`;
+
+            if (gameLoopId) cancelAnimationFrame(gameLoopId); // Clear any existing loop
+            if (invincibilityTimerId) clearTimeout(invincibilityTimerId); // Clear invincibility timer
+
+             questionModal.style.display = 'none'; // Ensure question modal is hidden
+            lastSpawnTime = performance.now(); // Reset spawn timer
+            gameLoopId = requestAnimationFrame(gameLoop); // Start the game loop
+        }
+
+        // --- Main Game Loop ---
+        function gameLoop(timestamp) {
+            // Crucial checks at the start: If paused or game over, stop processing BUT request next frame IF paused for modal
+             if (isGameOver) {
+                  // Optionally draw a final "Game Over" state on canvas? Currently handled by message box.
+                  return; // Stop loop completely on game over
+             }
+             if (isPaused) {
+                 // If paused (e.g., for question modal or life lost message),
+                 // keep requesting frames to allow potential modal interactions or resuming,
+                 // but don't run game logic.
+                 if(questionModal.style.display !== 'flex' && messageBox.style.display !== 'flex'){
+                     // If somehow paused without a modal, potentially resume or log warning
+                     // console.warn("Game paused without modal, check logic");
+                     // For safety, keep requesting frame if paused state might change externally
+                      gameLoopId = requestAnimationFrame(gameLoop);
+                 } else {
+                     // If paused FOR a modal, let the modal handle resuming the loop
+                     // No need to request another frame here, modal logic will do it.
+                 }
+                 return;
+             }
+
+
+             // --- Only run game logic if not paused and not game over ---
+
+            // Spawn new aliens based on interval
+            if (timestamp - lastSpawnTime > currentSpawnInterval) {
+                spawnAlien();
+                lastSpawnTime = timestamp;
+                 // Gradually decrease spawn interval to increase difficulty, with a minimum limit
+                 currentSpawnInterval = Math.max(400, currentSpawnInterval - 5); // Min 400ms interval
+            }
+
+            clearCanvas(); // Clear the canvas for redrawing
+
+            // Update game elements
+            updatePlayer();
+            updateProjectiles();
+            updateAliens(); // Handles alien movement and player collision detection (respecting invincibility)
+
+            // Check projectile collisions (respecting invincibility)
+             if (!isGameOver && !isPaused) { // Redundant check? Better safe.
+                 checkCollisions(); // Handles projectile-alien hits and triggers questions
+             }
+
+
+            // Draw game elements
+            drawPlayer(); // Handles invincibility blink
+            drawProjectiles();
+            drawAliens();
+
+            // Request the next frame to continue the loop
+             if (!isGameOver && !isPaused) { // Ensure loop continues only if active
+                 gameLoopId = requestAnimationFrame(gameLoop);
+             }
+        }
+
+        // --- Event Listeners ---
+        document.addEventListener('keydown', (e) => {
+             // Ignore keydown if a modal is active (question or message box)
+             if (isGameOver || (isPaused && (questionModal.style.display === 'flex' || messageBox.style.display === 'flex'))) return;
+
+            keys[e.key] = true;
+            // Player Movement
+            if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
+                player.dx = -player.speed;
+            } else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
+                player.dx = player.speed;
+            }
+            // Player Shooting
+            if (e.key === ' ' || e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') {
+                 if (isPaused) return; // Don't shoot if paused
+                // Limit number of projectiles on screen
+                if (projectiles.length < 5) { // Max 5 shots at once
+                    projectiles.push({
+                        x: player.x + player.width / 2 - projectileWidth / 2,
+                        y: player.y - projectileHeight,
+                        width: projectileWidth, height: projectileHeight, speed: projectileSpeed
+                    });
+                }
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            // Keyup should always register to stop movement, even if paused? Decide based on feel.
+            // Current logic: Let keyup register to stop movement initiated before pause.
+             keys[e.key] = false;
+
+            // Stop movement if the corresponding key is released
+            if ((e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') && player.dx < 0) {
+                player.dx = 0;
+            } else if ((e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') && player.dx > 0) {
+                player.dx = 0;
+            }
+
+             // Handle case where one direction key is released while the other is still held down
+             if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
+                 if (keys['ArrowRight'] || keys['d']) player.dx = player.speed; // If right is still down, move right
+             }
+             if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
+                 if (keys['ArrowLeft'] || keys['a']) player.dx = -player.speed; // If left is still down, move left
+             }
+        });
+
+         // --- Touch Controls Setup ---
+         function setupTouchControls() {
+             if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+                 touchControls.style.display = 'flex'; // Show controls on touch devices
+                 const leftBtn = document.getElementById('touch-left');
+                 const rightBtn = document.getElementById('touch-right');
+                 const fireBtn = document.getElementById('touch-fire');
+                 let touchMoveInterval = null; // Interval for continuous movement
+
+                 const startMoving = (direction) => {
+                     // Prevent action if modal is active
+                     if (isGameOver || (isPaused && (questionModal.style.display === 'flex' || messageBox.style.display === 'flex'))) return;
+                     player.dx = direction * player.speed;
+                     // Clear any existing interval
+                     if (touchMoveInterval) clearInterval(touchMoveInterval);
+                     // Set interval to repeatedly apply movement (helps with responsiveness)
+                     touchMoveInterval = setInterval(() => {
+                         // Stop if game becomes paused/over during touch hold
+                          if (isGameOver || (isPaused && (questionModal.style.display === 'flex' || messageBox.style.display === 'flex'))) {
+                              stopMoving(); return;
+                          }
+                         player.dx = direction * player.speed;
+                     }, 30); // Adjust interval as needed
+                 };
+
+                 const stopMoving = () => {
+                     player.dx = 0;
+                     if (touchMoveInterval) { clearInterval(touchMoveInterval); touchMoveInterval = null; }
+                 };
+
+                 const fire = () => {
+                      // Prevent action if paused/over
+                      if (isGameOver || isPaused) return;
+                      if (projectiles.length < 5) { // Limit shots
+                          projectiles.push({
+                              x: player.x + player.width / 2 - projectileWidth / 2, y: player.y - projectileHeight,
+                              width: projectileWidth, height: projectileHeight, speed: projectileSpeed
+                          });
+                      }
+                 };
+
+                 // Use passive: false to allow preventDefault if needed, though might not be strictly required here
+                 leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(-1); }, { passive: false });
+                 leftBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopMoving(); }, { passive: false });
+                 leftBtn.addEventListener('touchcancel', (e) => { e.preventDefault(); stopMoving(); }, { passive: false });
+                 // Prevent mouse events from interfering on hybrid devices
+                 leftBtn.addEventListener('mousedown', (e) => e.preventDefault());
+
+                 rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(1); }, { passive: false });
+                 rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopMoving(); }, { passive: false });
+                 rightBtn.addEventListener('touchcancel', (e) => { e.preventDefault(); stopMoving(); }, { passive: false });
+                 rightBtn.addEventListener('mousedown', (e) => e.preventDefault());
+
+                 fireBtn.addEventListener('touchstart', (e) => { e.preventDefault(); fire(); }, { passive: false });
+                 fireBtn.addEventListener('mousedown', (e) => e.preventDefault());
+
+             } else {
+                 touchControls.style.display = 'none'; // Hide controls on non-touch devices
+             }
+         }
+
+        // --- Initial Game Start ---
+        function initGame() {
+            setupTouchControls(); // Detect touch and show controls if needed
+            scoreBoard.textContent = `Score: ${score}`;
+            livesBoard.textContent = `Lives: ${playerLives}`;
+            // Show initial instructions
+            showMessageBox("Invaders Approaching!\nUse Arrows/A/D to Move\nSpace/Up/W to Fire", true, "Start Game", () => {
+                 // restartGame will be called when the button is clicked
+                 restartGame(); // Start the game fresh
+            });
+            // Draw initial state (player) before game loop starts
+            clearCanvas();
+            drawPlayer();
+        }
+
+        window.onload = initGame; // Start initialization when page is loaded
+
+    </script>
+</body>
+</html>
