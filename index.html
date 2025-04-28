@@ -2,223 +2,214 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Space Invaders Quiz</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Flippy Bird Quiz</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
+        /* CSS Variables for easy theming */
         :root {
-            --game-bg: #000000;
-            --player-color: #00ff00; /* Bright green */
-            --alien-color: #ff0000; /* Bright red */
-            --projectile-color: #ffffff; /* White */
-            --text-color: #ffffff;
-            --modal-bg: rgba(20, 20, 20, 0.9);
-            --button-bg: #333333;
-            --button-hover-bg: #555555;
-            --button-border: #aaaaaa;
-            --correct-color: #33ff33;
-            --incorrect-color: #ff3333;
-            --life-color: #ffff00; /* Yellow for lives */
+            --game-bg: #70c5ce; /* Light blue sky */
+            --bird-color: #fafa00; /* Yellow bird */
+            --pipe-color: #73bf2e; /* Green pipe */
+            --pipe-border: #55801f; /* Darker green border */
+            --text-color: #ffffff; /* White text for modals */
+            --score-text-color: #000000; /* Black score/lives text */
+            --lives-color: #ff6347; /* Tomato red for lives */
+            --modal-bg: rgba(20, 20, 20, 0.9); /* Dark semi-transparent modal background */
+            --button-bg: #333333; /* Dark grey button */
+            --button-hover-bg: #555555; /* Lighter grey on hover */
+            --button-border: #aaaaaa; /* Light grey border */
+            --correct-color: #33ff33; /* Bright green for correct answers */
+            --incorrect-color: #ff3333; /* Bright red for incorrect answers */
+            --countdown-color: #ffffff; /* White for countdown text */
         }
 
+        /* Basic body styling */
         body {
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #1a1a1a; /* Dark background */
-            color: var(--text-color);
-            font-family: 'Press Start 2P', cursive;
-            margin: 0;
-            padding-top: 20px; /* Add some padding at the top */
-            overflow: hidden; /* Prevent scrollbars */
+            justify-content: flex-start; /* Align content to the top */
+            align-items: center; /* Center content horizontally */
+            min-height: 100vh; /* Ensure body takes at least full viewport height */
+            background-color: #1a1a1a; /* Dark background for the overall page */
+            color: var(--text-color); /* Default text color (mainly for modals) */
+            font-family: 'Press Start 2P', cursive; /* Pixelated game font */
+            margin: 0; /* Remove default body margin */
+            padding-top: 15px; /* Add some space at the top */
+            overflow: hidden; /* Prevent scrollbars on the body */
+            touch-action: manipulation; /* Helps prevent double-tap zoom on touch devices */
         }
 
+        /* Game title styling */
         h1 {
-            color: var(--player-color);
-            margin-bottom: 15px; /* Space below title */
-            font-size: 1.8em;
-            text-shadow: 2px 2px #ff00ff; /* Magenta shadow for retro feel */
+            color: var(--bird-color); /* Match bird color */
+            margin-bottom: 10px; /* Space below title */
+            font-size: 1.6em; /* Adjust title size */
+            text-shadow: 2px 2px #ff00ff; /* Retro magenta shadow */
+            text-align: center; /* Ensure title is centered */
         }
 
-        /* Container for Score and Lives - Positioned above game */
+        /* Container for the score and lives display */
         #game-info {
             display: flex;
-            justify-content: space-between; /* Space out score and lives */
-            width: 90%; /* Match canvas width or adjust */
-            max-width: 600px; /* Match canvas width */
-            margin-bottom: 15px; /* Space below info, above canvas */
-            font-size: 1.2em;
+            /* MODIFIED: Space out score and lives */
+            justify-content: space-between;
+            width: 90%; /* Responsive width */
+            max-width: 400px; /* Match canvas width */
+            margin-bottom: 10px; /* Space below score, above canvas */
+            font-size: 1.2em; /* Slightly smaller font for score/lives */
+            color: var(--score-text-color); /* Black score text */
+            font-weight: bold;
+            text-shadow: 1px 1px var(--text-color); /* White shadow for visibility */
+            z-index: 10; /* Ensure score is displayed above the canvas */
+            position: relative; /* Needed for z-index */
         }
 
+        /* Score text alignment */
         #score-board {
              text-align: left;
         }
+        /* ADDED: Lives text styling */
         #lives-board {
             text-align: right;
-            color: var(--life-color); /* Use life color */
+            color: var(--lives-color); /* Use specific lives color */
         }
 
+
+        /* Container holding the canvas and message boxes */
         #game-container {
-            position: relative; /* For positioning messages */
-            border: 4px solid var(--button-border);
-            box-shadow: 0 0 15px var(--player-color); /* Neon glow */
+            position: relative; /* Allows absolute positioning of children (message box) */
+            border: 4px solid var(--button-border); /* Border around the game */
+            box-shadow: 0 0 15px var(--bird-color); /* Neon glow effect */
+            width: 400px; /* Game width */
+            height: 480px; /* Game height */
+            margin: 0 auto; /* Center the container horizontally */
+            background-color: var(--game-bg); /* Background color visible inside the border */
+            overflow: hidden; /* Important: Clips anything drawn outside the canvas bounds */
         }
 
+        /* Canvas styling */
         canvas {
-            display: block; /* Remove extra space below canvas */
-            background-color: var(--game-bg);
+            display: block; /* Removes extra space below the canvas */
+            background-color: var(--game-bg); /* Set canvas background */
+            width: 100%; /* Make canvas fill its container */
+            height: 100%; /* Make canvas fill its container */
         }
 
 
-        /* --- Question Modal --- */
+        /* --- Question Modal Styling --- */
         #question-modal {
             display: none; /* Hidden by default */
-            position: fixed;
-            z-index: 100;
+            position: fixed; /* Position relative to the viewport */
+            z-index: 100; /* Ensure modal is on top of everything */
             left: 0; top: 0;
             width: 100%; height: 100%;
-            background-color: rgba(0, 0, 0, 0.7); /* Dark overlay */
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            box-sizing: border-box;
+            background-color: rgba(0, 0, 0, 0.8); /* Dark overlay */
+            justify-content: center; /* Center content horizontally */
+            align-items: center; /* Center content vertically */
+            padding: 15px; /* Padding around the modal content */
+            box-sizing: border-box; /* Include padding in width/height calculation */
         }
 
+        /* Content area within the modal */
         .modal-content {
             background-color: var(--modal-bg);
-            padding: 30px 40px;
+            padding: 25px 30px;
             border: 4px solid var(--button-border);
-            width: 90%;
-            max-width: 600px;
+            width: 95%; /* Responsive width */
+            max-width: 500px; /* Max width for larger screens */
             text-align: center;
-            box-shadow: 0 0 10px var(--text-color);
+            box-shadow: 0 0 10px var(--text-color); /* Subtle glow */
         }
 
+        /* Question text styling */
         #question-text {
-            margin-bottom: 25px;
-            font-size: 1em; /* Adjust as needed */
-            line-height: 1.5;
+            margin-bottom: 20px;
+            font-size: 0.9em; /* Slightly smaller font for questions */
+            line-height: 1.4; /* Improve readability */
         }
 
+        /* Styling for answer buttons */
         .answer-options button {
-            display: block;
+            display: block; /* Make buttons take full width */
             width: 100%;
-            padding: 15px 10px;
-            margin: 10px 0;
+            padding: 12px 8px;
+            margin: 8px 0; /* Space between buttons */
+            background-color: var(--button-bg);
+            color: var(--text-color);
+            border: 2px solid var(--button-border);
+            font-family: 'Press Start 2P', cursive; /* Match game font */
+            font-size: 0.8em; /* Smaller font for answers */
+            cursor: pointer;
+            text-align: left; /* Align text to the left */
+            transition: background-color 0.2s; /* Smooth hover effect */
+        }
+
+        /* Hover effect for enabled buttons */
+        .answer-options button:hover:not(:disabled) {
+            background-color: var(--button-hover-bg);
+        }
+        /* Style for disabled buttons (after selection) */
+        .answer-options button:disabled { opacity: 0.6; cursor: default; }
+        /* Style for the selected correct answer */
+        .answer-options button.selected-correct { background-color: var(--correct-color) !important; color: #000; border-color: var(--correct-color); }
+        /* Style for the selected incorrect answer */
+        .answer-options button.selected-incorrect { background-color: var(--incorrect-color) !important; color: #000; border-color: var(--incorrect-color); }
+
+        /* Feedback text (Correct/Incorrect) styling */
+        #feedback-text {
+            margin-top: 15px;
+            font-size: 0.9em;
+            min-height: 1.4em; /* Prevent layout shift when text appears */
+            font-weight: normal;
+        }
+        #feedback-text.correct { color: var(--correct-color); }
+        #feedback-text.incorrect { color: var(--incorrect-color); }
+
+
+        /* --- Message Box (Game Over / Start / Life Lost) Styling --- */
+        #message-box {
+            position: absolute; /* Position relative to game-container */
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%); /* Center the box precisely */
+            background-color: rgba(0, 0, 0, 0.85); /* Slightly darker overlay */
+            color: var(--text-color);
+            padding: 20px 30px;
+            border: 4px solid var(--button-border);
+            font-size: 1.1em;
+            text-align: center;
+            z-index: 50; /* Above canvas, below question modal */
+            display: none; /* Hidden by default, changed to flex by JS */
+            flex-direction: column; /* Stack text and button vertically */
+            align-items: center; /* Center items horizontally */
+            gap: 15px; /* Space between text and button */
+            box-shadow: 0 0 10px var(--text-color);
+            width: 80%; /* Make box reasonably wide */
+            box-sizing: border-box;
+        }
+        #message-box p { margin: 0; line-height: 1.4; } /* Message text styling */
+        /* Button inside the message box */
+        #message-box button {
+            padding: 10px 20px;
             background-color: var(--button-bg);
             color: var(--text-color);
             border: 2px solid var(--button-border);
             font-family: 'Press Start 2P', cursive;
             font-size: 0.9em;
             cursor: pointer;
-            text-align: left;
             transition: background-color 0.2s;
         }
+        #message-box button:hover { background-color: var(--button-hover-bg); }
 
-        .answer-options button:hover:not(:disabled) {
-            background-color: var(--button-hover-bg);
-        }
-
-        .answer-options button:disabled {
-            opacity: 0.6;
-            cursor: default;
-        }
-
-        .answer-options button.selected-correct {
-            background-color: var(--correct-color) !important;
-            color: #000;
-            border-color: var(--correct-color);
-        }
-
-        .answer-options button.selected-incorrect {
-            background-color: var(--incorrect-color) !important;
-            color: #000;
-            border-color: var(--incorrect-color);
-        }
-
-        #feedback-text {
-            margin-top: 20px;
-            font-size: 1em;
-            min-height: 1.5em; /* Prevent layout shift */
-            font-weight: normal; /* Override potential bolding */
-        }
-        #feedback-text.correct { color: var(--correct-color); }
-        #feedback-text.incorrect { color: var(--incorrect-color); }
-
-
-        /* --- Message Box (Game Over / Start / Life Lost) --- */
-        #message-box {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            background-color: rgba(0, 0, 0, 0.85);
-            color: var(--text-color);
-            padding: 25px 35px;
-            border: 4px solid var(--button-border);
-            font-size: 1.2em;
-            text-align: center;
-            z-index: 50;
-            display: flex; /* Use flex for layout */
-            flex-direction: column;
-            align-items: center;
-            gap: 15px; /* Space between elements */
-            box-shadow: 0 0 10px var(--text-color);
-        }
-        #message-box p {
-            margin: 0;
-            line-height: 1.4;
-        }
-        #message-box button {
-             padding: 10px 20px;
-             background-color: var(--button-bg);
-             color: var(--text-color);
-             border: 2px solid var(--button-border);
-             font-family: 'Press Start 2P', cursive;
-             font-size: 0.9em;
-             cursor: pointer;
-             transition: background-color 0.2s;
-        }
-         #message-box button:hover {
-             background-color: var(--button-hover-bg);
-         }
-
-         /* Simple button styling for potential future controls */
-         .controls {
-             margin-top: 20px;
-         }
-         .control-button {
-             padding: 10px 15px;
-             background-color: var(--button-bg);
-             color: var(--text-color);
-             border: 2px solid var(--button-border);
-             font-family: 'Press Start 2P', cursive;
-             font-size: 0.9em;
-             cursor: pointer;
-             margin: 0 5px;
-             transition: background-color 0.2s;
-         }
-         .control-button:hover {
-             background-color: var(--button-hover-bg);
-         }
-
-         /* Player blinking effect */
-         .player-invincible {
-             animation: blink 0.2s infinite;
-         }
-
-         @keyframes blink {
-             0%, 100% { opacity: 1; }
-             50% { opacity: 0.3; }
-         }
+        /* Hide original Space Invaders touch controls if they existed */
+        #touch-controls { display: none !important; }
 
     </style>
 </head>
 <body>
-    <h1>CFTE Space Invaders Quiz</h1>
+    <h1>Flippy Bird Quiz</h1>
 
     <div id="game-info">
         <div id="score-board">Score: 0</div>
@@ -238,327 +229,553 @@
         </div>
     </div>
 
-    <div class="controls" id="touch-controls" style="display: none; margin-top: 15px;">
-         <button id="touch-left" class="control-button">&lt;</button>
-         <button id="touch-fire" class="control-button">FIRE</button>
-         <button id="touch-right" class="control-button">&gt;</button>
-     </div>
+    <div id="touch-flap-area" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 40;"></div>
 
 
     <script>
-        // --- DOM Elements ---
+        // --- DOM Element References ---
         const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d'); // Canvas drawing context
         const scoreBoard = document.getElementById('score-board');
-        const livesBoard = document.getElementById('lives-board'); // Get lives display element
+        const livesBoard = document.getElementById('lives-board');
         const questionModal = document.getElementById('question-modal');
         const questionText = document.getElementById('question-text');
         const answerOptionsContainer = document.getElementById('answer-options');
         const feedbackText = document.getElementById('feedback-text');
         const messageBox = document.getElementById('message-box');
         const gameContainer = document.getElementById('game-container');
-        const touchControls = document.getElementById('touch-controls');
+        const touchFlapArea = document.getElementById('touch-flap-area'); // Area to detect taps
 
 
-        // --- Game Configuration ---
-        const canvasWidth = 600;
-        const canvasHeight = 400;
-        canvas.width = canvasWidth;
-        canvas.height = canvasHeight;
+        // --- Game Configuration Constants ---
+        const canvasWidth = 400; // Game area width in pixels
+        const canvasHeight = 480; // Game area height in pixels
+        canvas.width = canvasWidth; // Set canvas element width
+        canvas.height = canvasHeight; // Set canvas element height
 
-        const playerWidth = 40;
-        const playerHeight = 20;
-        const playerSpeed = 5;
-        const projectileWidth = 4;
-        const projectileHeight = 10;
-        const projectileSpeed = 7;
-        const alienWidth = 30;
-        const alienHeight = 20;
-        const alienSpeed = 0.5; // Initial speed
-        const alienSpawnInterval = 1500; // Milliseconds between spawns (initial)
-        const alienPadding = 10;
-        const alienRows = 1;
-        const alienCols = 1;
-        const initialLives = 3; // Starting number of lives
-        const invincibilityDuration = 2000; // Milliseconds of invincibility after losing a life
-        const KILLS_PER_QUESTION = 5; // <-- How many kills trigger a question
-
-        // --- Game State ---
-        let playerX;
-        let score = 0;
-        let playerLives = initialLives; // Initialize player lives
-        let projectiles = [];
-        let aliens = [];
-        let keys = {}; // To track pressed keys
-        let isGameOver = false;
-        let isPaused = false; // Used for question modal or life loss pause
-        let gameLoopId;
-        let alienSpawnTimerId;
-        let currentAlienSpeed = alienSpeed;
-        let currentSpawnInterval = alienSpawnInterval;
-        let lastSpawnTime = 0;
-        let currentQuestion = null;
-        let askedQuestionIndices = new Set();
-        let killsSinceLastQuestion = 0; // <-- ADDED: Counter for kills
-        let isPlayerInvincible = false; // Flag for invincibility
-        let invincibilityTimerId = null; // Timer for invincibility
+        const BIRD_WIDTH = 34; // Bird width
+        const BIRD_HEIGHT = 24; // Bird height
+        const GRAVITY = 0.15; // Downward acceleration per frame
+        const FLAP_STRENGTH = -6; // Initial upward velocity when flapping
+        const PIPE_WIDTH = 52; // Width of the pipes
+        const PIPE_GAP = 200; // Vertical space between top and bottom pipes
+        const PIPE_SPEED = 1; // Horizontal speed pipes move left per frame
+        const PIPE_SPAWN_DISTANCE = 180; // Horizontal distance between consecutive pipe pairs
+        const PIPES_PER_QUESTION = 3; // Number of pipes to pass before a question appears
+        const initialLives = 3;
 
 
-        // --- Player Object (simple representation) ---
-        const player = {
-            x: canvasWidth / 2 - playerWidth / 2,
-            y: canvasHeight - playerHeight - 10, // Positioned at the bottom
-            width: playerWidth,
-            height: playerHeight,
-            speed: playerSpeed,
-            color: getCssVariable('--player-color') || '#00ff00', // Use CSS variable
-            dx: 0 // Horizontal movement direction
+        // --- Game State Variables ---
+        let score = 0; // Player's score
+        let playerLives = initialLives;
+        let pipes = []; // Array to hold pipe objects { x: number, topHeight: number, passed: boolean }
+        let isGameOver = false; // Flag indicating if the game has ended
+        let isPaused = false; // Flag indicating if game logic updates should pause (e.g., for modals)
+        let gameLoopId; // ID returned by requestAnimationFrame, used to cancel the loop
+        let currentQuestion = null; // Stores the currently displayed question object
+        let askedQuestionIndices = new Set(); // Keeps track of indices of questions already asked to avoid repeats
+        let pipesPassedSinceLastQuestion = 0; // Counter for pipes passed since the last question
+        let frameCount = 0; // Simple frame counter, used here to help time pipe spawns
+        let isCountingDown = false;
+        let countdownValue = 3;
+        let lastCountdownTime = 0; // Timestamp for countdown timing
+
+
+        // --- Bird Object ---
+        const bird = {
+            x: 70, // Fixed horizontal position of the bird
+            y: canvasHeight / 2 - BIRD_HEIGHT / 2, // Initial vertical position (centered)
+            dy: 0, // Initial vertical velocity (starts still)
+            width: BIRD_WIDTH,
+            height: BIRD_HEIGHT,
+            color: getCssVariable('--bird-color') || '#fafa00', // Get color from CSS variable
+
+            // Method to make the bird flap upwards
+            flap: function() {
+                // Only flap if the game is active (not over, not paused, not counting down)
+                if (!isGameOver && !isPaused && !isCountingDown) {
+                    this.dy = FLAP_STRENGTH; // Apply immediate upward velocity
+                }
+            },
+
+            // Method to update the bird's state each frame
+            update: function() {
+                // Skip updates if paused OR counting down
+                if (isPaused || isCountingDown) return;
+
+                this.dy += GRAVITY; // Apply gravity to vertical velocity
+                this.y += this.dy; // Update vertical position based on velocity
+
+                // Check for collision with the top boundary (sky)
+                if (this.y < 0) {
+                    this.y = 0; // Stop bird at the top edge
+                    this.dy = 0; // Reset velocity
+                    handleLifeLoss("Hit the sky!");
+                }
+                // Check for collision with the bottom boundary (ground)
+                if (this.y + this.height > canvasHeight) {
+                    this.y = canvasHeight - this.height; // Stop bird at the ground
+                    this.dy = 0; // Reset velocity
+                    handleLifeLoss("Hit the ground!");
+                }
+            },
+
+            // Method to draw the bird on the canvas
+            draw: function() {
+                ctx.fillStyle = this.color;
+                // Draw a simple ellipse shape for the bird
+                ctx.beginPath();
+                ctx.ellipse(this.x + this.width / 2, this.y + this.height / 2, this.width / 2, this.height / 2, 0, 0, Math.PI * 2);
+                ctx.fill();
+                // Draw a simple black eye
+                ctx.fillStyle = '#000';
+                ctx.beginPath();
+                ctx.arc(this.x + this.width * 0.7, this.y + this.height * 0.4, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
         };
 
-        // --- Questions (Generated from the provided AI script) ---
-         const questions = [
-             // Definitions
-             { question: "What is the broad field where machines aim to mimic human capabilities?", options: ["Artificial Intelligence", "Machine Learning", "Deep Learning", "Generative AI"], correctAnswer: "Artificial Intelligence", difficulty: 1 },
-             { question: "What subset of AI involves machines learning and improving by themselves from data?", options: ["Machine Learning", "Deep Learning", "Transformers", "Artificial Intelligence"], correctAnswer: "Machine Learning", difficulty: 1 },
-             { question: "Which field uses Neural Networks inspired by the human brain?", options: ["Deep Learning", "Machine Learning", "Generative AI", "Large Language Models"], correctAnswer: "Deep Learning", difficulty: 2 },
-             { question: "What type of AI focuses specifically on creating new content like text, images, or audio?", options: ["Generative AI", "Machine Learning", "Deep Learning", "Transformers"], correctAnswer: "Generative AI", difficulty: 2 },
-             { question: "What is a 'Transformer' in the context of modern AI?", options: ["A neural network architecture", "A type of robot", "A data cleaning tool", "A programming language"], correctAnswer: "A neural network architecture", difficulty: 2 },
-             { question: "What are advanced deep learning models trained on vast amounts of data to understand/generate text called?", options: ["Large Language Models (LLMs)", "Generative AI", "Transformers", "Neural Networks"], correctAnswer: "Large Language Models (LLMs)", difficulty: 2 },
-             { question: "What does 'GPT' in ChatGPT stand for?", options: ["Generative Pre-Trained Transformer", "General Purpose Technology", "Global Processing Terminal", "Graphical Processing Tool"], correctAnswer: "Generative Pre-Trained Transformer", difficulty: 1 },
-             { question: "In GPT, what does the 'G' signify?", options: ["Generative (creates content)", "General (broad purpose)", "Google (the company)", "GPU (hardware)"], correctAnswer: "Generative (creates content)", difficulty: 1 },
-             { question: "In GPT, what does 'Pre-Trained' mean?", options: ["Trained on vast data beforehand", "Requires training before each use", "Only partially trained", "Trained specifically for one task"], correctAnswer: "Trained on vast data beforehand", difficulty: 1 },
-             { question: "Which architecture does ChatGPT use, indicated by the 'T' in GPT?", options: ["Transformer", "Recurrent Neural Network", "Convolutional Neural Network", "Support Vector Machine"], correctAnswer: "Transformer", difficulty: 1 },
-
-             // History & Milestones
-             { question: "In which year was the term 'Artificial Intelligence' coined?", options: ["1956", "1997", "2012", "2022"], correctAnswer: "1956", difficulty: 1 },
-             { question: "What famous event happened in 1997 involving AI and chess?", options: ["Deep Blue beat Garry Kasparov", "Google Cat Experiment", "ChatGPT was released", "AI became 'AI-first'"], correctAnswer: "Deep Blue beat Garry Kasparov", difficulty: 2 },
-             { question: "Around what year did the 'Google Cat Experiment' demonstrate a Deep Learning breakthrough?", options: ["2012", "1997", "2017", "2022"], correctAnswer: "2012", difficulty: 2 },
-             { question: "Around 2017, what shift did many tech companies like Google announce?", options: ["Becoming 'AI-first' companies", "Focusing only on Machine Learning", "Abandoning Deep Learning", "Releasing ChatGPT"], correctAnswer: "Becoming 'AI-first' companies", difficulty: 3 },
-             { question: "In which year was ChatGPT released, bringing Generative AI to the public?", options: ["2022", "2012", "2017", "1997"], correctAnswer: "2022", difficulty: 2 },
-
-             // Technology & Concepts
-             { question: "What type of hardware, initially for gaming, proved crucial for training Deep Learning models?", options: ["GPUs (Graphics Processing Units)", "CPUs (Central Processing Units)", "RAM (Random Access Memory)", "SSDs (Solid State Drives)"], correctAnswer: "GPUs (Graphics Processing Units)", difficulty: 2 },
-             { question: "What was revolutionary about the 'Google Cat Experiment'?", options: ["The system learned to identify cats without human instruction", "It used very little data", "It ran on a standard home computer", "It could talk about cats"], correctAnswer: "The system learned to identify cats without human instruction", difficulty: 3 },
-             { question: "What is a key difference between traditional Machine Learning and Generative AI?", options: ["ML analyzes existing data, GenAI creates new content", "ML uses Transformers, GenAI uses older methods", "ML is newer than GenAI", "GenAI cannot learn from data"], correctAnswer: "ML analyzes existing data, GenAI creates new content", difficulty: 2 },
-             { question: "Which task is typical for traditional Machine Learning?", options: ["Filtering spam emails", "Drawing a picture of a dog", "Writing a poem", "Generating dynamic chat responses"], correctAnswer: "Filtering spam emails", difficulty: 2 },
-             { question: "Which task is typical for Generative AI?", options: ["Generating a contextually relevant chatbot response", "Identifying a cat in a photo", "Predicting stock prices based on past data", "Detecting credit card fraud"], correctAnswer: "Generating a contextually relevant chatbot response", difficulty: 2 }
-         ];
+        // --- MODIFIED: New Questions Array ---
+        const questions = [
+            {
+                question: "According to the text, what significant shift has occurred regarding AI, especially after ChatGPT?",
+                options: [
+                    "a) AI has become less relevant in major industries.",
+                    "b) AI has remained primarily a research topic.",
+                    "c) AI is transitioning from a buzzword to standard infrastructure.",
+                    "d) AI adoption has significantly slowed down."
+                ],
+                correctAnswer: "c) AI is transitioning from a buzzword to standard infrastructure.",
+                difficulty: 1 // Assigning difficulty (can adjust)
+            },
+            {
+                question: "What framework does the author introduce to make sense of how companies adopt innovation like AI?",
+                options: [
+                    "a) The SWOT Analysis Matrix",
+                    "b) The CDE Innovation Prism",
+                    "c) The McKinsey 7-S Framework",
+                    "d) The Balanced Scorecard"
+                ],
+                correctAnswer: "b) The CDE Innovation Prism",
+                difficulty: 1
+            },
+            {
+                question: "In the CDE Innovation Prism, what does 'C' stand for?",
+                options: [
+                    "a) Creative",
+                    "b) Collaborative",
+                    "c) Cheaper, Better, Faster",
+                    "d) Customer-Centric"
+                ],
+                correctAnswer: "c) Cheaper, Better, Faster",
+                difficulty: 1
+            },
+            {
+                question: "What defines the 'Different' (D) pattern of innovation in the CDE prism?",
+                options: [
+                    "a) Improving existing processes incrementally.",
+                    "b) Creating something entirely new, inventing rather than competing.",
+                    "c) Enabling other companies to perform better.",
+                    "d) Reducing operational costs significantly."
+                ],
+                correctAnswer: "b) Creating something entirely new, inventing rather than competing.",
+                difficulty: 2 // Slightly more complex definition
+            },
+            {
+                question: "Which company is cited as an example of the 'Enhancing' (E) approach in the CDE prism?",
+                options: [
+                    "a) Amazon",
+                    "b) Facebook",
+                    "c) Synthesia",
+                    "d) Salesforce"
+                ],
+                correctAnswer: "d) Salesforce",
+                difficulty: 1
+            },
+            {
+                question: "In what order does the author suggest examining how companies are using AI through the CDE lens?",
+                options: [
+                    "a) Cheaper, Different, Enhancing (C, D, E)",
+                    "b) Different, Enhancing, Cheaper (D, E, C)",
+                    "c) Enhancing, Cheaper, Different (E, C, D)",
+                    "d) Cheaper, Enhancing, Different (C, E, D)"
+                ],
+                correctAnswer: "c) Enhancing, Cheaper, Different (E, C, D)",
+                difficulty: 1
+            },
+            {
+                question: "Which of the following is an example of AI being used for 'Internal Productivity' under the 'Enhancing' category?",
+                options: [
+                    "a) KLM using multilingual chatbots for customer queries.",
+                    "b) Developers at Goldman Sachs using AI coding assistants.",
+                    "c) DHL deploying robotic pickers in warehouses.",
+                    "d) Moderna using AI to simulate vaccine candidates."
+                ],
+                correctAnswer: "b) Developers at Goldman Sachs using AI coding assistants.",
+                difficulty: 2 // Requires identifying the specific sub-category
+            },
+            {
+                question: "What is a noted consequence of AI adoption in the 'Cheaper' category regarding the workforce?",
+                options: [
+                    "a) An increase in entry-level positions.",
+                    "b) A shift requiring new hires to possess higher-level skills from the start.",
+                    "c) No significant impact on hiring or job roles.",
+                    "d) Companies are mandated to retrain all displaced workers."
+                ],
+                correctAnswer: "b) A shift requiring new hires to possess higher-level skills from the start.",
+                difficulty: 2
+            },
+            {
+                question: "What defines companies operating in the 'Different' category of AI adoption?",
+                options: [
+                    "a) They use AI primarily to cut costs.",
+                    "b) They enhance existing workflows with AI tools.",
+                    "c) They are built from the ground up with AI at their core.",
+                    "d) They focus on improving customer service with chatbots."
+                ],
+                correctAnswer: "c) They are built from the ground up with AI at their core.",
+                difficulty: 2
+            },
+            {
+                question: "The text concludes by describing two waves of AI. What characterizes the second wave?",
+                options: [
+                    "a) Productivity gains and cost savings.",
+                    "b) Automation of simple tasks.",
+                    "c) Reinvention, system design, and business model transformation.",
+                    "d) Improved customer support through chatbots."
+                ],
+                correctAnswer: "c) Reinvention, system design, and business model transformation.",
+                difficulty: 1
+            },
+            {
+                question: "What are the three core strengths identified for becoming a 'supercharged professional'?",
+                options: [
+                    "a) Coding Skills, Marketing Ability, Financial Acumen",
+                    "b) Domain Experience, Tech Leverage, Future-Proofing Skills",
+                    "c) Public Speaking, Networking, Project Management",
+                    "d) Task Execution, Following Instructions, Reliability"
+                ],
+                correctAnswer: "b) Domain Experience, Tech Leverage, Future-Proofing Skills",
+                difficulty: 1
+            },
+            {
+                question: "According to the text, why is domain experience particularly valuable when combined with AI?",
+                options: [
+                    "a) It allows you to build AI models from scratch.",
+                    "b) It makes you irreplaceable by providing context and understanding subtleties AI lacks.",
+                    "c) It guarantees a promotion in any field.",
+                    "d) It is less important than technical AI skills."
+                ],
+                correctAnswer: "b) It makes you irreplaceable by providing context and understanding subtleties AI lacks.",
+                difficulty: 2
+            },
+            {
+                question: "How is AI changing the requirements for career success based on the Performance Hexagon concept mentioned?",
+                options: [
+                    "a) Task execution is becoming more important than ever.",
+                    "b) Problem-solving skills are becoming less relevant.",
+                    "c) AI is replacing simple task execution, making higher-level skills like problem-solving crucial.",
+                    "d) The Performance Hexagon is no longer relevant in the age of AI."
+                ],
+                correctAnswer: "c) AI is replacing simple task execution, making higher-level skills like problem-solving crucial.",
+                difficulty: 2
+            },
+            {
+                question: "What opportunity does the text suggest exists for non-technical employees in large organizations regarding AI?",
+                options: [
+                    "a) To block the implementation of AI tools.",
+                    "b) To ignore AI developments as they are handled by tech teams.",
+                    "c) To drive discussions, join initiatives, and shape AI use by providing business context.",
+                    "d) To switch careers entirely into technical AI roles."
+                ],
+                correctAnswer: "c) To drive discussions, join initiatives, and shape AI use by providing business context.",
+                difficulty: 1
+            },
+            {
+                question: "What is the recommended approach for AI adoption in startups and small organizations?",
+                options: [
+                    "a) Avoid AI tools to save costs.",
+                    "b) Implement a wide variety of tools without standardization.",
+                    "c) Progress through stages: AI Mindset, AI Skills, AI Stack (consolidation), and AI Systems (automation).",
+                    "d) Wait for large organizations to establish best practices first."
+                ],
+                correctAnswer: "c) Progress through stages: AI Mindset, AI Skills, AI Stack (consolidation), and AI Systems (automation).",
+                difficulty: 1
+            },
+            {
+                question: "What technique is suggested as highly effective for using AI in personal life?",
+                options: [
+                    "a) Using the shortest prompts possible.",
+                    "b) Giving AI a specific role to play (e.g., \"Act as a sparring partner\").",
+                    "c) Only using free AI tools.",
+                    "d) Focusing solely on task automation."
+                ],
+                correctAnswer: "b) Giving AI a specific role to play (e.g., \"Act as a sparring partner\").",
+                difficulty: 1
+            },
+            {
+                question: "How is the CDE framework adapted for personal AI use?",
+                options: [
+                    "a) It categorizes AI tools by cost (Cheap, Discounted, Expensive).",
+                    "b) It frames AI's support as Reclaiming time (Replace), Improving thinking (Enhance), or Enabling new projects (Expand/Different).",
+                    "c) It focuses only on the 'Enhancing' aspect for personal growth.",
+                    "d) It's deemed irrelevant for personal life applications."
+                ],
+                correctAnswer: "b) It frames AI's support as Reclaiming time (Replace), Improving thinking (Enhance), or Enabling new projects (Expand/Different).",
+                difficulty: 2
+            },
+            {
+                question: "What is the recommended order for building strengths in children to prepare them for an AI-shaped world?",
+                options: [
+                    "a) AI Fluency first, then Domain Experience, then Future-Proofing Skills.",
+                    "b) Domain Experience first, then AI Fluency, then Future-Proofing Skills.",
+                    "c) Future-Proofing Skills first, then Domain Experience, then AI Fluency.",
+                    "d) All three should be developed simultaneously from the start."
+                ],
+                correctAnswer: "c) Future-Proofing Skills first, then Domain Experience, then AI Fluency.",
+                difficulty: 1
+            },
+            {
+                question: "What potential risk is highlighted regarding introducing AI too early to children?",
+                options: [
+                    "a) They might become too technically skilled.",
+                    "b) It could stunt their independent reasoning and critical thinking skills.",
+                    "c) It will make them overly reliant on domain experience.",
+                    "d) There are no significant risks mentioned."
+                ],
+                correctAnswer: "b) It could stunt their independent reasoning and critical thinking skills.",
+                difficulty: 1
+            },
+            {
+                question: "What are the five key layers of the proposed 'Supercharged Learning Stack'?",
+                options: [
+                    "a) Courses, Books, Podcasts, Videos, Articles",
+                    "b) Focus, Inputs, Memory, Routine, Application",
+                    "c) Read, Watch, Listen, Practice, Test",
+                    "d) Hardware, Software, Network, Data, Security"
+                ],
+                correctAnswer: "b) Focus, Inputs, Memory, Routine, Application",
+                difficulty: 1
+            }
+        ];
 
 
         // --- Utility Functions ---
+        // Helper to get CSS variable values
         function getCssVariable(varName) {
             return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
         }
 
+        // Helper to shuffle an array (Fisher-Yates algorithm)
         function shuffleArray(array) {
             for (let i = array.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
+                [array[i], array[j]] = [array[j], array[i]]; // Swap elements
             }
         }
 
         // --- Drawing Functions ---
-        function drawPlayer() {
-            // Apply blinking effect if invincible
-            if (isPlayerInvincible) {
-                if (Math.floor(performance.now() / 100) % 2 === 0) {
-                     return; // Skip drawing half the time for blink effect
-                }
-            }
-            ctx.fillStyle = player.color;
-            ctx.fillRect(player.x, player.y, player.width, player.height);
-             // Draw a simple turret on top
-             ctx.fillStyle = '#cccccc'; // Light gray for turret
-             ctx.fillRect(player.x + player.width / 2 - 3, player.y - 5, 6, 5); // Small rectangle
+        // Calls the bird's draw method
+        function drawBird() {
+            bird.draw();
         }
 
-        function drawProjectiles() {
-            ctx.fillStyle = getCssVariable('--projectile-color') || '#ffffff';
-            projectiles.forEach(p => {
-                ctx.fillRect(p.x, p.y, p.width, p.height);
+        // Draws all the pipes currently in the pipes array
+        function drawPipes() {
+            const pipeColor = getCssVariable('--pipe-color') || '#73bf2e';
+            const pipeBorderColor = getCssVariable('--pipe-border') || '#55801f';
+            const pipeCapHeight = 20; // Height of the decorative cap on pipes
+
+            pipes.forEach(pipe => {
+                // --- Draw Top Pipe ---
+                ctx.fillStyle = pipeColor;
+                ctx.fillRect(pipe.x, 0, PIPE_WIDTH, pipe.topHeight);
+                ctx.strokeStyle = pipeBorderColor;
+                ctx.lineWidth = 2;
+                ctx.strokeRect(pipe.x, 0, PIPE_WIDTH, pipe.topHeight);
+                ctx.fillStyle = pipeColor;
+                ctx.fillRect(pipe.x - 2, pipe.topHeight - pipeCapHeight, PIPE_WIDTH + 4, pipeCapHeight);
+                ctx.strokeStyle = pipeBorderColor;
+                ctx.strokeRect(pipe.x - 2, pipe.topHeight - pipeCapHeight, PIPE_WIDTH + 4, pipeCapHeight);
+
+                // --- Draw Bottom Pipe ---
+                const bottomPipeY = pipe.topHeight + PIPE_GAP;
+                const bottomPipeHeight = canvasHeight - bottomPipeY;
+                ctx.fillStyle = pipeColor;
+                ctx.fillRect(pipe.x, bottomPipeY, PIPE_WIDTH, bottomPipeHeight);
+                ctx.strokeStyle = pipeBorderColor;
+                ctx.strokeRect(pipe.x, bottomPipeY, PIPE_WIDTH, bottomPipeHeight);
+                ctx.fillStyle = pipeColor;
+                ctx.fillRect(pipe.x - 2, bottomPipeY, PIPE_WIDTH + 4, pipeCapHeight);
+                ctx.strokeStyle = pipeBorderColor;
+                ctx.strokeRect(pipe.x - 2, bottomPipeY, PIPE_WIDTH + 4, pipeCapHeight);
             });
         }
 
-        function drawAliens() {
-            const alienColor = getCssVariable('--alien-color') || '#ff0000';
-            aliens.forEach(alien => {
-                // Simple blocky alien representation
-                // ctx.fillStyle = alienColor;
-                // ctx.fillRect(alien.x, alien.y, alien.width, alien.height);
-
-                // Emoji alien representation
-                ctx.font = `${alien.height * 1.5}px Arial`; // Adjust size as needed
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText('👾', alien.x + alien.width / 2, alien.y + alien.height / 2); // Use emoji
-            });
-        }
-
+        // Clears the entire canvas
         function clearCanvas() {
             ctx.clearRect(0, 0, canvasWidth, canvasHeight);
         }
 
-        // --- Game Logic ---
-        function updatePlayer() {
-             if (isPaused) return; // Don't move if paused
-            player.x += player.dx;
-            // Boundary checks
-            if (player.x < 0) {
-                player.x = 0;
-            } else if (player.x + player.width > canvasWidth) {
-                player.x = canvasWidth - player.width;
+        // ADDED: Function to draw the countdown text
+        function drawCountdown() {
+            if (!isCountingDown) return;
+            ctx.fillStyle = getCssVariable('--countdown-color') || '#ffffff';
+            ctx.font = "48px 'Press Start 2P'"; // Large font for countdown
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(countdownValue, canvasWidth / 2, canvasHeight / 2);
+        }
+
+
+        // --- Game Logic Update Functions ---
+        // Updates the bird's state
+        function updateBird() {
+            bird.update();
+        }
+
+        // Creates a new pipe pair and adds it to the pipes array
+        function spawnPipe() {
+            const minHeight = 40; // Min height from top/bottom edge
+            const maxHeight = canvasHeight - PIPE_GAP - minHeight;
+            let topHeight; // Declare topHeight here
+
+            if (maxHeight <= minHeight) {
+                console.error("Pipe gap is too large for canvas height and minHeight!");
+                topHeight = minHeight + 10; // Example fallback
+            } else {
+                 topHeight = Math.floor(Math.random() * (maxHeight - minHeight + 1)) + minHeight;
             }
-        }
 
-        function updateProjectiles() {
-             if (isPaused) return; // Don't move if paused
-            projectiles.forEach((p, index) => {
-                p.y -= p.speed;
-                // Remove projectile if it goes off-screen
-                if (p.y + p.height < 0) {
-                    projectiles.splice(index, 1);
-                }
+            pipes.push({
+                x: canvasWidth, // Start pipe just off-screen to the right
+                topHeight: topHeight, // Store the calculated height of the top pipe
+                passed: false // Flag to track if the bird has successfully passed this pipe
             });
         }
 
-        function spawnAlien() {
-             if (isPaused || isGameOver) return; // Don't spawn if paused or game over
-            const x = Math.random() * (canvasWidth - alienWidth);
-            const y = 0 - alienHeight; // Start just above the canvas
-            aliens.push({
-                x: x, y: y, width: alienWidth, height: alienHeight, speed: currentAlienSpeed
-            });
-             // Optionally increase speed slightly over time
-             currentAlienSpeed += 0.01; // Make this increase smaller or conditional
-             // console.log("Spawned alien, current speed:", currentAlienSpeed);
-        }
+        // Updates the state of all pipes (movement, spawning, scoring, question trigger)
+        function updatePipes() {
+            // Skip updates if paused OR counting down
+            if (isPaused || isCountingDown) return;
 
-        function updateAliens() {
-             if (isPaused) return; // Don't move if paused
-            let triggerLifeLoss = false;
-            let lifeLossReason = "";
+             frameCount++;
+             if (pipes.length === 0 || (canvasWidth - (pipes[pipes.length - 1].x + PIPE_WIDTH)) >= PIPE_SPAWN_DISTANCE) {
+                  spawnPipe();
+             }
 
-            aliens.forEach((alien, index) => {
-                alien.y += alien.speed;
+            let triggerQuestion = false; // Flag to ask question after the loop finishes
 
-                // Check if alien reached the bottom
-                if (alien.y + alien.height > canvasHeight) {
-                    triggerLifeLoss = true;
-                    lifeLossReason = "Alien reached the bottom!";
-                    aliens.splice(index, 1); // Remove the alien that reached the bottom
-                    return; // Stop processing this alien
+            for (let i = pipes.length - 1; i >= 0; i--) {
+                let pipe = pipes[i];
+                pipe.x -= PIPE_SPEED; // Move pipe to the left
+
+                if (!pipe.passed && pipe.x + PIPE_WIDTH < bird.x) {
+                    pipe.passed = true; // Mark as passed
+                    score++; // Increment score
+                    scoreBoard.textContent = `Score: ${score}`; // Update score display
+                    pipesPassedSinceLastQuestion++; // Increment counter for question trigger
+
+                    if (pipesPassedSinceLastQuestion >= PIPES_PER_QUESTION) {
+                         pipesPassedSinceLastQuestion = 0; // Reset the counter
+                         triggerQuestion = true; // Set flag to ask question later
+                    }
                 }
 
-                 // Check for collision with player (only if player is NOT invincible)
-                 if (!isPlayerInvincible &&
-                     alien.x < player.x + player.width &&
-                     alien.x + alien.width > player.x &&
-                     alien.y < player.y + player.height &&
-                     alien.y + alien.height > player.y
-                 ) {
-                     triggerLifeLoss = true;
-                     lifeLossReason = "Alien collided with player!";
-                     // Don't remove the alien here, handleLifeLoss will clear them
-                     return; // Stop checking other aliens once a collision is detected
-                 }
-            });
-
-            if (triggerLifeLoss) {
-                handleLifeLoss(lifeLossReason);
+                if (pipe.x + PIPE_WIDTH < 0) {
+                    pipes.splice(i, 1); // Remove pipe from array
+                }
             }
+
+             if (triggerQuestion) {
+                  pauseGame(true); // Pause the game logic
+                  askQuestion();   // Display the question modal
+             }
         }
 
+        // Checks for collisions between the bird and pipes
         function checkCollisions() {
-             if (isPaused || isPlayerInvincible) return; // Skip checks if paused or invincible
+            // Skip checks if paused, game over OR counting down
+            if (isPaused || isGameOver || isCountingDown) return;
 
-             projectiles.forEach((p, pIndex) => {
-                 // Iterate backwards through aliens for safe removal
-                 for (let aIndex = aliens.length - 1; aIndex >= 0; aIndex--) {
-                     const alien = aliens[aIndex];
+            const birdRect = { x: bird.x, y: bird.y, width: bird.width, height: bird.height };
 
-                     // Ensure projectile still exists (might have hit another alien already in this frame)
-                     if (!projectiles[pIndex]) break; // Exit inner loop if projectile is gone
+            for (const pipe of pipes) {
+                const topPipeRect = { x: pipe.x, y: 0, width: PIPE_WIDTH, height: pipe.topHeight };
+                const bottomPipeRect = {
+                    x: pipe.x,
+                    y: pipe.topHeight + PIPE_GAP,
+                    width: PIPE_WIDTH,
+                    height: canvasHeight - (pipe.topHeight + PIPE_GAP) // Calculate height
+                };
 
-                     if (
-                         p.x < alien.x + alien.width &&
-                         p.x + p.width > alien.x &&
-                         p.y < alien.y + alien.height &&
-                         p.y + p.height > alien.y
-                     ) {
-                         // Collision detected!
-                         projectiles.splice(pIndex, 1); // Remove the projectile
-                         aliens.splice(aIndex, 1);     // Remove the alien
+                const checkOverlap = (rect1, rect2) => {
+                    return rect1.x < rect2.x + rect2.width &&
+                           rect1.x + rect1.width > rect2.x &&
+                           rect1.y < rect2.y + rect2.height &&
+                           rect1.y + rect1.height > rect2.y;
+                };
 
-                         score += 10;                 // Increase score
-                         scoreBoard.textContent = `Score: ${score}`; // Update scoreboard
-
-                         killsSinceLastQuestion++; // <-- INCREMENT KILL COUNTER
-
-                         // --- Check if it's time for a question ---
-                         if (killsSinceLastQuestion >= KILLS_PER_QUESTION) { // <-- CHECK COUNTER
-                             killsSinceLastQuestion = 0;    // <-- RESET COUNTER
-                             pauseGame(true, false);      // Pause the game logic
-                             askQuestion();               // Ask the question
-                         }
-                         // --- End Question Check ---
-
-                         // Since projectile is gone, stop checking it against other aliens
-                         break; // Exit the inner alien loop
-                     }
-                 }
-             });
-
-             // Player-alien collision is handled in updateAliens to allow invincibility check
+                // MODIFIED: Call handleLifeLoss instead of gameOver
+                if (checkOverlap(birdRect, topPipeRect) || checkOverlap(birdRect, bottomPipeRect)) {
+                    handleLifeLoss("Hit a pipe!");
+                    return; // Exit collision check immediately
+                }
+            }
         }
 
 
-        // --- Question Handling ---
+        // --- Question Handling Logic ---
         function askQuestion() {
-             isPaused = true; // Ensure game logic stops
-             if (gameLoopId) cancelAnimationFrame(gameLoopId); // Stop rendering loop if running
-             gameLoopId = null;
+            isPaused = true; // Ensure game logic stops
+             if (gameLoopId) { // Stop the rendering loop if it's running
+                cancelAnimationFrame(gameLoopId);
+                gameLoopId = null;
+             }
 
-            // Determine question difficulty based on score
-            let maxDifficulty = 1;
-            if (score >= 150) maxDifficulty = 3; // Harder questions at higher scores
-            else if (score >= 50) maxDifficulty = 2; // Medium questions
+            // --- Question Selection Logic ---
+            // Optional: Filter by difficulty (using assigned difficulty)
+            let maxDifficulty = 1; // Default to easy
+            if (score >= 10) maxDifficulty = 2; // Use harder questions after score 10
+            // else if (score >= 5) maxDifficulty = 2; // Example scaling
 
-            // Filter questions by difficulty and exclude already asked ones
             let potentialQuestions = questions
                 .map((q, index) => ({ ...q, originalIndex: index })) // Keep track of original index
-                .filter(q => q.difficulty <= maxDifficulty);
-            let availableQuestions = potentialQuestions.filter(q => !askedQuestionIndices.has(q.originalIndex));
+                .filter(q => q.difficulty <= maxDifficulty); // Filter by max difficulty
+            let availableQuestions = potentialQuestions.filter(q => !askedQuestionIndices.has(q.originalIndex)); // Filter out asked
 
-            // If we run out of questions at the current difficulty, reset *only* those asked at or below this level
+            // Reset logic (unchanged)
             if (availableQuestions.length === 0 && potentialQuestions.length > 0) {
                 console.log("Resetting asked questions for difficulty <=", maxDifficulty);
                 potentialQuestions.forEach(q => askedQuestionIndices.delete(q.originalIndex));
                 availableQuestions = potentialQuestions.filter(q => !askedQuestionIndices.has(q.originalIndex));
             }
-            // If still no questions (e.g., all questions exhausted), just resume the game
              if (availableQuestions.length === 0) {
-                 console.warn("No suitable questions left, even after reset! Resuming game.");
-                 resumeGameAfterQuestion(); // Resume if no question found
-                 return;
-             }
+                console.warn("No suitable questions left! Resuming game.");
+                startCountdown();
+                return;
+            }
 
             const randomIndex = Math.floor(Math.random() * availableQuestions.length);
             currentQuestion = availableQuestions[randomIndex];
-            askedQuestionIndices.add(currentQuestion.originalIndex); // Track original index as asked
+            askedQuestionIndices.add(currentQuestion.originalIndex);
 
+            // --- Display Question in Modal ---
             questionText.textContent = currentQuestion.question;
-            answerOptionsContainer.innerHTML = ''; // Clear previous options
-            feedbackText.textContent = ''; // Clear previous feedback
-            feedbackText.className = ''; // Reset feedback style
+            answerOptionsContainer.innerHTML = '';
+            feedbackText.textContent = '';
+            feedbackText.className = '';
 
-            // Shuffle options for variety
             const shuffledOptions = [...currentQuestion.options];
             shuffleArray(shuffledOptions);
 
             shuffledOptions.forEach(option => {
                 const button = document.createElement('button');
-                button.textContent = option;
-                button.onclick = (e) => handleAnswer(option, e.target); // Pass the button element
+                // Display option without the leading "a) ", "b) " etc.
+                button.textContent = option.substring(option.indexOf(')') + 1).trim();
+                // Store the original option text (including prefix) for checking the answer
+                button.dataset.originalOption = option;
+                button.onclick = (e) => handleAnswer(e.target.dataset.originalOption, e.target); // Check against original option
                 answerOptionsContainer.appendChild(button);
             });
 
@@ -566,347 +783,289 @@
         }
 
         function handleAnswer(selectedOption, selectedButton) {
-            const correct = selectedOption === currentQuestion.correctAnswer;
-            const buttons = answerOptionsContainer.querySelectorAll('button');
+             // Check the selected original option against the correct answer
+             const correct = selectedOption === currentQuestion.correctAnswer;
+             const buttons = answerOptionsContainer.querySelectorAll('button');
+             buttons.forEach(btn => btn.disabled = true);
 
-            // Disable all buttons after an answer is chosen
-            buttons.forEach(btn => btn.disabled = true);
+             if (correct) {
+                 // Correct Answer Logic
+                 feedbackText.textContent = `Correct!`;
+                 feedbackText.classList.add('correct');
+                 selectedButton.classList.add('selected-correct');
+                 setTimeout(startCountdown, 1200); // Wait 1.2s then start countdown
+             } else {
+                 // Incorrect Answer Logic
+                 // Display the correct answer text without the prefix
+                 const correctAnswerText = currentQuestion.correctAnswer.substring(currentQuestion.correctAnswer.indexOf(')') + 1).trim();
+                 feedbackText.textContent = `Incorrect! Answer: ${correctAnswerText}`;
+                 feedbackText.classList.add('incorrect');
+                 selectedButton.classList.add('selected-incorrect');
 
-            if (correct) {
-                let pointsAwarded = currentQuestion.difficulty * 10; // More points for harder Qs
-                score += pointsAwarded;
-                scoreBoard.textContent = `Score: ${score}`;
-                feedbackText.textContent = `Correct! +${pointsAwarded} pts!`;
-                feedbackText.classList.add('correct');
-                selectedButton.classList.add('selected-correct'); // Highlight selected correct answer
-            } else {
-                feedbackText.textContent = `Incorrect! Answer: ${currentQuestion.correctAnswer}`;
-                feedbackText.classList.add('incorrect');
-                selectedButton.classList.add('selected-incorrect'); // Highlight selected incorrect answer
-                // Also highlight the actual correct answer
+                 // Highlight the actual correct answer button
                  buttons.forEach(btn => {
-                     if(btn.textContent === currentQuestion.correctAnswer) {
-                         btn.classList.add('selected-correct'); // Show the right one
-                     }
+                      // Compare the stored original option with the correct answer string
+                      if(btn.dataset.originalOption === currentQuestion.correctAnswer) {
+                           btn.classList.add('selected-correct');
+                      }
                  });
-                 // Optional penalty or effect for wrong answer could go here
-                 // e.g., slightly increase alien speed for the next wave?
-                 // currentAlienSpeed += 0.1;
-            }
 
-            // Wait a moment before closing the modal and resuming
-            setTimeout(resumeGameAfterQuestion, 1800); // 1.8 seconds delay
+                 // --- Lose Life on WRONG ANSWER ---
+                 setTimeout(() => {
+                      questionModal.style.display = 'none';
+                      handleLifeLoss("Incorrect answer!");
+                 }, 1800); // 1.8 second delay
+             }
         }
 
-        function resumeGameAfterQuestion() {
+        // Function to start the 3-second countdown
+        function startCountdown() {
             questionModal.style.display = 'none'; // Hide the modal
-            if (!isGameOver) { // Only resume if game isn't over
-                isPaused = false; // Allow game logic to run again
-                if (!gameLoopId) { // Restart the game loop if it was stopped
-                     lastSpawnTime = performance.now(); // Reset spawn timer
+            if (!isGameOver) { // Only start countdown if game isn't over
+                isCountingDown = true;
+                countdownValue = 3; // Start from 3
+                lastCountdownTime = performance.now(); // Record start time
+                isPaused = false; // Unpause game state (but logic is blocked by isCountingDown)
+                if (!gameLoopId) { // Ensure game loop is running for countdown display
                     gameLoopId = requestAnimationFrame(gameLoop);
                 }
             }
         }
 
-        // --- Game State Management ---
-        function pauseGame(forQuestion = false, stopSpawning = true) {
+        // Function called after countdown finishes
+        function resumeGameAfterCountdown() {
+            isCountingDown = false; // Countdown finished
+            // Game loop will naturally continue with normal updates now
+            if (!isGameOver && !isPaused && !gameLoopId) { // Restart loop if somehow stopped
+                 gameLoopId = requestAnimationFrame(gameLoop);
+            }
+        }
+
+
+        // --- Game State Management Functions ---
+        // Pauses the game logic updates
+        function pauseGame(forQuestion = false) {
              isPaused = true;
-             if (gameLoopId) { // Stop the main loop
+             // Stop the loop ONLY if pausing not for a question AND not already counting down
+             if (!forQuestion && !isCountingDown && gameLoopId) {
                  cancelAnimationFrame(gameLoopId);
                  gameLoopId = null;
              }
-             // Note: Alien spawning is now controlled within the gameLoop based on isPaused
-             // so explicitly stopping spawn timer might not be needed unless using setInterval
+             console.log("Game Paused. For Question:", forQuestion);
         }
 
+        // Shows the message box (for start/game over)
         function showMessageBox(message, showButton = true, buttonText = "Restart", onButtonClick = restartGame) {
-            messageBox.innerHTML = `<p>${message.replace(/\n/g, '<br>')}</p>`; // Allow newlines in message
-            if (showButton) {
-                const button = document.createElement('button');
-                button.textContent = buttonText;
-                button.onclick = onButtonClick;
-                messageBox.appendChild(button);
-            }
-            messageBox.style.display = 'flex'; // Show the box
+             messageBox.innerHTML = `<p>${message.replace(/\n/g, '<br>')}</p>`;
+             if (showButton) {
+                 const button = document.createElement('button');
+                 button.textContent = buttonText;
+                 button.onclick = onButtonClick;
+                 messageBox.appendChild(button);
+             }
+             messageBox.style.display = 'flex';
         }
 
+        // Hides the message box
         function hideMessageBox() {
-            messageBox.style.display = 'none'; // Hide the box
+             messageBox.style.display = 'none';
         }
 
+        // ADDED: Handle losing a life
         function handleLifeLoss(reason) {
-             if (isGameOver || isPlayerInvincible) return; // Ignore if already game over or invincible
+            // Ignore if already game over or in countdown
+            if (isGameOver || isCountingDown) return;
 
+            console.log("Life Lost:", reason);
             playerLives--;
             livesBoard.textContent = `Lives: ${playerLives}`;
-            console.log("Life Lost:", reason, "Lives left:", playerLives);
-            pauseGame(false, true); // Pause the game
 
-             if (playerLives <= 0) {
-                 gameOver(reason); // Trigger game over
-             } else {
-                 // Start invincibility period
-                 isPlayerInvincible = true;
-                 // Clear screen of dangers
-                 aliens = [];
-                 projectiles = [];
-                 // Reset player position
-                 player.x = canvasWidth / 2 - playerWidth / 2;
-                 player.dx = 0;
+            if (playerLives <= 0) {
+                // Actual Game Over
+                gameOver(reason); // Trigger final game over screen
+            } else {
+                // Life lost, but game continues
+                isPaused = true; // Briefly pause to reset
+                if (gameLoopId) {
+                    cancelAnimationFrame(gameLoopId);
+                    gameLoopId = null;
+                }
 
-                 // Show life lost message and wait for player to continue
-                 showMessageBox(`Life Lost!\n${reason}\nLives Left: ${playerLives}`, true, "Continue", () => {
-                     hideMessageBox();
-                     isPaused = false; // Unpause game logic
+                // Reset bird position and velocity immediately
+                bird.y = canvasHeight / 2 - BIRD_HEIGHT / 2;
+                bird.dy = 0;
 
-                     // Clear previous invincibility timer if any (shouldn't happen often)
-                     if (invincibilityTimerId) clearTimeout(invincibilityTimerId);
+                // Briefly show canvas with reset bird, then unpause
+                clearCanvas();
+                drawPipes(); // Draw existing pipes
+                drawBird(); // Draw bird in reset position
 
-                     // Set timer to end invincibility
-                     invincibilityTimerId = setTimeout(() => {
-                         isPlayerInvincible = false;
-                         invincibilityTimerId = null;
-                         console.log("Player invincibility ended");
-                     }, invincibilityDuration);
-
-                     // Restart game loop
-                     if (!gameLoopId) {
-                          lastSpawnTime = performance.now(); // Reset spawn timer
-                         gameLoopId = requestAnimationFrame(gameLoop);
-                     }
-                 });
-             }
+                // Short delay before resuming
+                setTimeout(() => {
+                    if (isGameOver) return; // Check again in case game ended during timeout
+                    isPaused = false;
+                    if (!gameLoopId) { // Restart loop if needed
+                        gameLoopId = requestAnimationFrame(gameLoop);
+                    }
+                }, 500); // 0.5 second pause after losing life
+            }
         }
 
+
+        // Ends the game definitively (when lives reach 0)
         function gameOver(reason) {
-             if (isGameOver) return; // Prevent multiple game over triggers
-            console.log("Game Over:", reason);
+            if (isGameOver) return; // Prevent multiple triggers
+            console.log("Final Game Over:", reason);
             isGameOver = true;
-            isPaused = true; // Ensure game stays paused
-            if (gameLoopId) { // Stop the loop definitively
+            isPaused = true; // Ensure game logic stops
+            isCountingDown = false; // Stop countdown if active
+            if (gameLoopId) {
                 cancelAnimationFrame(gameLoopId);
                 gameLoopId = null;
             }
-             // Cancel invincibility if game ends while invincible
-             if (invincibilityTimerId) {
-                 clearTimeout(invincibilityTimerId);
-                 isPlayerInvincible = false; // Ensure player isn't drawn invincible on game over screen
-                 invincibilityTimerId = null;
-             }
-            showMessageBox(`Game Over! ${reason}\nFinal Score: ${score}`, true, "Restart", restartGame);
+            showMessageBox(`Game Over!\n${reason}\nFinal Score: ${score}`, true, "Restart", restartGame);
         }
 
+        // Resets the game state to start a new game
         function restartGame() {
-            hideMessageBox();
+            hideMessageBox(); // Hide any message box
+            // Reset game variables
             score = 0;
-            playerLives = initialLives;
-            player.x = canvasWidth / 2 - playerWidth / 2;
-            player.dx = 0;
-            projectiles = [];
-            aliens = [];
-            keys = {};
+            playerLives = initialLives; // Reset lives
+            bird.y = canvasHeight / 2 - BIRD_HEIGHT / 2;
+            bird.dy = 0;
+            pipes = [];
+            frameCount = 0;
             isGameOver = false;
             isPaused = false;
-            isPlayerInvincible = false;
-            currentAlienSpeed = alienSpeed; // Reset alien speed
-            currentSpawnInterval = alienSpawnInterval; // Reset spawn interval
-            askedQuestionIndices.clear(); // Clear asked questions
-            killsSinceLastQuestion = 0; // <-- RESET KILL COUNTER
+            isCountingDown = false; // Reset countdown state
+            countdownValue = 3;
+            askedQuestionIndices.clear();
+            pipesPassedSinceLastQuestion = 0;
 
+            // Update UI elements
             scoreBoard.textContent = `Score: ${score}`;
-            livesBoard.textContent = `Lives: ${playerLives}`;
+            livesBoard.textContent = `Lives: ${playerLives}`; // Update lives display
+            questionModal.style.display = 'none';
 
-            if (gameLoopId) cancelAnimationFrame(gameLoopId); // Clear any existing loop
-            if (invincibilityTimerId) clearTimeout(invincibilityTimerId); // Clear invincibility timer
+            // Clear any existing animation frame request
+            if (gameLoopId) cancelAnimationFrame(gameLoopId);
 
-             questionModal.style.display = 'none'; // Ensure question modal is hidden
-            lastSpawnTime = performance.now(); // Reset spawn timer
-            gameLoopId = requestAnimationFrame(gameLoop); // Start the game loop
+            // Start the main game loop
+            gameLoopId = requestAnimationFrame(gameLoop);
+            console.log("Game Restarted");
         }
 
-        // --- Main Game Loop ---
-        function gameLoop(timestamp) {
-            // Crucial checks at the start: If paused or game over, stop processing BUT request next frame IF paused for modal
-             if (isGameOver) {
-                  // Optionally draw a final "Game Over" state on canvas? Currently handled by message box.
-                  return; // Stop loop completely on game over
-             }
-             if (isPaused) {
-                 // If paused (e.g., for question modal or life lost message),
-                 // keep requesting frames to allow potential modal interactions or resuming,
-                 // but don't run game logic.
-                 if(questionModal.style.display !== 'flex' && messageBox.style.display !== 'flex'){
-                     // If somehow paused without a modal, potentially resume or log warning
-                     // console.warn("Game paused without modal, check logic");
-                     // For safety, keep requesting frame if paused state might change externally
-                      gameLoopId = requestAnimationFrame(gameLoop);
-                 } else {
-                     // If paused FOR a modal, let the modal handle resuming the loop
-                     // No need to request another frame here, modal logic will do it.
+        // --- Main Game Loop Function ---
+        function gameLoop(timestamp) { // timestamp provided by requestAnimationFrame
+
+             // --- Loop Control ---
+             if (isGameOver) { return; } // Stop loop if game over
+
+             // Handle Countdown Logic FIRST
+             if (isCountingDown) {
+                 clearCanvas(); // Clear screen for countdown
+                 drawPipes(); // Keep pipes visible
+                 drawBird(); // Keep bird visible
+                 drawCountdown(); // Draw the number
+
+                 // Check if 1 second has passed
+                 if (timestamp - lastCountdownTime >= 1000) {
+                     countdownValue--;
+                     lastCountdownTime = timestamp;
+                     if (countdownValue <= 0) {
+                         // Countdown finished, resume game
+                         resumeGameAfterCountdown();
+                         // Don't return yet, let the normal game logic run once this frame
+                     }
                  }
-                 return;
-             }
-
-
-             // --- Only run game logic if not paused and not game over ---
-
-            // Spawn new aliens based on interval
-            if (timestamp - lastSpawnTime > currentSpawnInterval) {
-                spawnAlien();
-                lastSpawnTime = timestamp;
-                 // Gradually decrease spawn interval to increase difficulty, with a minimum limit
-                 currentSpawnInterval = Math.max(400, currentSpawnInterval - 5); // Min 400ms interval
-            }
-
-            clearCanvas(); // Clear the canvas for redrawing
-
-            // Update game elements
-            updatePlayer();
-            updateProjectiles();
-            updateAliens(); // Handles alien movement and player collision detection (respecting invincibility)
-
-            // Check projectile collisions (respecting invincibility)
-             if (!isGameOver && !isPaused) { // Redundant check? Better safe.
-                 checkCollisions(); // Handles projectile-alien hits and triggers questions
-             }
-
-
-            // Draw game elements
-            drawPlayer(); // Handles invincibility blink
-            drawProjectiles();
-            drawAliens();
-
-            // Request the next frame to continue the loop
-             if (!isGameOver && !isPaused) { // Ensure loop continues only if active
+                 // Keep requesting frames during countdown
                  gameLoopId = requestAnimationFrame(gameLoop);
+                 return; // Don't run normal game logic/drawing during countdown frames (except drawing)
              }
+
+             // Normal Pause Check (e.g., after life loss, before restart)
+             if (isPaused && questionModal.style.display !== 'flex') {
+                  gameLoopId = requestAnimationFrame(gameLoop);
+                  return;
+             }
+             // Pause for Question Modal
+             if (isPaused && questionModal.style.display === 'flex') { return; }
+
+
+            // --- Game Logic Execution (only runs if not paused, not game over, not counting down) ---
+            clearCanvas(); // Clear the canvas for the new frame
+
+            // Update the state of game elements
+            updateBird(); // Apply gravity, update position, check ground/sky collision (triggers handleLifeLoss)
+            updatePipes(); // Move pipes, spawn new ones, check for score, trigger questions
+            checkCollisions(); // Check for collisions between bird and pipes (triggers handleLifeLoss)
+
+            // Draw the game elements in their updated positions
+            drawPipes(); // Draw pipes first (background elements)
+            drawBird(); // Draw bird on top
+
+            // Request the next frame to continue the animation loop
+            if (!isGameOver && !isPaused && !isCountingDown) { // Check all flags
+                gameLoopId = requestAnimationFrame(gameLoop);
+            }
         }
 
-        // --- Event Listeners ---
+        // --- Event Listeners Setup ---
+        function handleInput(event) {
+             if (event.type !== 'mousedown') { event.preventDefault(); }
+
+             // Case 1: Game is active (and not counting down) - flap the bird
+             if (!isGameOver && !isPaused && !isCountingDown && questionModal.style.display !== 'flex') {
+                 bird.flap();
+             }
+             // Case 2: Game is over and message box is shown - trigger restart
+             else if (isGameOver && messageBox.style.display === 'flex'){
+                  const restartButton = messageBox.querySelector('button');
+                  if (restartButton) { restartButton.click(); }
+             }
+             // Case 3: Game hasn't started (initial message box) - trigger start
+             else if (!isGameOver && !isPaused && messageBox.style.display === 'flex') {
+                 const startButton = messageBox.querySelector('button');
+                 if (startButton && startButton.textContent === "Start Game") { startButton.click(); }
+             }
+             // Ignore input during countdown or question modal
+        }
+
         document.addEventListener('keydown', (e) => {
-             // Ignore keydown if a modal is active (question or message box)
-             if (isGameOver || (isPaused && (questionModal.style.display === 'flex' || messageBox.style.display === 'flex'))) return;
-
-            keys[e.key] = true;
-            // Player Movement
-            if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
-                player.dx = -player.speed;
-            } else if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
-                player.dx = player.speed;
-            }
-            // Player Shooting
-            if (e.key === ' ' || e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') {
-                 if (isPaused) return; // Don't shoot if paused
-                // Limit number of projectiles on screen
-                if (projectiles.length < 5) { // Max 5 shots at once
-                    projectiles.push({
-                        x: player.x + player.width / 2 - projectileWidth / 2,
-                        y: player.y - projectileHeight,
-                        width: projectileWidth, height: projectileHeight, speed: projectileSpeed
-                    });
-                }
-            }
-        });
-
-        document.addEventListener('keyup', (e) => {
-            // Keyup should always register to stop movement, even if paused? Decide based on feel.
-            // Current logic: Let keyup register to stop movement initiated before pause.
-             keys[e.key] = false;
-
-            // Stop movement if the corresponding key is released
-            if ((e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') && player.dx < 0) {
-                player.dx = 0;
-            } else if ((e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') && player.dx > 0) {
-                player.dx = 0;
-            }
-
-             // Handle case where one direction key is released while the other is still held down
-             if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') {
-                 if (keys['ArrowRight'] || keys['d']) player.dx = player.speed; // If right is still down, move right
-             }
-             if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') {
-                 if (keys['ArrowLeft'] || keys['a']) player.dx = -player.speed; // If left is still down, move left
+             if (e.key === ' ' || e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') {
+                 handleInput(e);
              }
         });
 
-         // --- Touch Controls Setup ---
-         function setupTouchControls() {
-             if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-                 touchControls.style.display = 'flex'; // Show controls on touch devices
-                 const leftBtn = document.getElementById('touch-left');
-                 const rightBtn = document.getElementById('touch-right');
-                 const fireBtn = document.getElementById('touch-fire');
-                 let touchMoveInterval = null; // Interval for continuous movement
+        touchFlapArea.addEventListener('touchstart', (e) => {
+            handleInput(e);
+        }, { passive: false });
 
-                 const startMoving = (direction) => {
-                     // Prevent action if modal is active
-                     if (isGameOver || (isPaused && (questionModal.style.display === 'flex' || messageBox.style.display === 'flex'))) return;
-                     player.dx = direction * player.speed;
-                     // Clear any existing interval
-                     if (touchMoveInterval) clearInterval(touchMoveInterval);
-                     // Set interval to repeatedly apply movement (helps with responsiveness)
-                     touchMoveInterval = setInterval(() => {
-                         // Stop if game becomes paused/over during touch hold
-                          if (isGameOver || (isPaused && (questionModal.style.display === 'flex' || messageBox.style.display === 'flex'))) {
-                              stopMoving(); return;
-                          }
-                         player.dx = direction * player.speed;
-                     }, 30); // Adjust interval as needed
-                 };
+         touchFlapArea.addEventListener('mousedown', (e) => {
+             handleInput(e);
+         });
 
-                 const stopMoving = () => {
-                     player.dx = 0;
-                     if (touchMoveInterval) { clearInterval(touchMoveInterval); touchMoveInterval = null; }
-                 };
 
-                 const fire = () => {
-                      // Prevent action if paused/over
-                      if (isGameOver || isPaused) return;
-                      if (projectiles.length < 5) { // Limit shots
-                          projectiles.push({
-                              x: player.x + player.width / 2 - projectileWidth / 2, y: player.y - projectileHeight,
-                              width: projectileWidth, height: projectileHeight, speed: projectileSpeed
-                          });
-                      }
-                 };
-
-                 // Use passive: false to allow preventDefault if needed, though might not be strictly required here
-                 leftBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(-1); }, { passive: false });
-                 leftBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopMoving(); }, { passive: false });
-                 leftBtn.addEventListener('touchcancel', (e) => { e.preventDefault(); stopMoving(); }, { passive: false });
-                 // Prevent mouse events from interfering on hybrid devices
-                 leftBtn.addEventListener('mousedown', (e) => e.preventDefault());
-
-                 rightBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startMoving(1); }, { passive: false });
-                 rightBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopMoving(); }, { passive: false });
-                 rightBtn.addEventListener('touchcancel', (e) => { e.preventDefault(); stopMoving(); }, { passive: false });
-                 rightBtn.addEventListener('mousedown', (e) => e.preventDefault());
-
-                 fireBtn.addEventListener('touchstart', (e) => { e.preventDefault(); fire(); }, { passive: false });
-                 fireBtn.addEventListener('mousedown', (e) => e.preventDefault());
-
-             } else {
-                 touchControls.style.display = 'none'; // Hide controls on non-touch devices
-             }
-         }
-
-        // --- Initial Game Start ---
+        // --- Initial Game Setup Function ---
         function initGame() {
-            setupTouchControls(); // Detect touch and show controls if needed
-            scoreBoard.textContent = `Score: ${score}`;
-            livesBoard.textContent = `Lives: ${playerLives}`;
-            // Show initial instructions
-            showMessageBox("Invaders Approaching!\nUse Arrows/A/D to Move\nSpace/Up/W to Fire", true, "Start Game", () => {
-                 // restartGame will be called when the button is clicked
-                 restartGame(); // Start the game fresh
-            });
-            // Draw initial state (player) before game loop starts
-            clearCanvas();
-            drawPlayer();
+             // Set initial score and lives display
+             scoreBoard.textContent = `Score: ${score}`;
+             livesBoard.textContent = `Lives: ${playerLives}`;
+
+             clearCanvas();
+             drawBird(); // Draw the bird centered
+
+             showMessageBox(
+                 "Flippy Bird Quiz!\nTap / Space / Up\nto Flap!\nAvoid pipes.\nAnswer questions!",
+                 true,
+                 "Start Game",
+                 () => { restartGame(); } // Action on button click
+             );
         }
 
-        window.onload = initGame; // Start initialization when page is loaded
+        // --- Start the Game ---
+        window.onload = initGame;
 
     </script>
 </body>
